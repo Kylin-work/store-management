@@ -10,6 +10,11 @@ from apps.accounts.views.account import (
 )
 from apps.accounts.views.login import LoginView
 from apps.accounts.views.me import MeView
+from apps.accounts.views.role import (
+    PermissionListView,
+    RoleDetailView,
+    RoleListCreateView,
+)
 
 urlpatterns = [
     # 认证
@@ -32,4 +37,9 @@ urlpatterns = [
         AccountStoreRolesView.as_view(),
         name="account-store-roles",
     ),
+    # 角色管理
+    path("roles/", RoleListCreateView.as_view(), name="role-list"),
+    path("roles/<str:code>/", RoleDetailView.as_view(), name="role-detail"),
+    # 权限码
+    path("permissions/", PermissionListView.as_view(), name="permission-list"),
 ]
