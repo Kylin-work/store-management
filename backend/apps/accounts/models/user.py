@@ -1,0 +1,68 @@
+"""自定义用户模型。
+
+- 去掉 username,用 employee_code(8 位纯数字,自动生成)登录
+- phone 作为联系方式，唯一但不参与认证
+- first_name / last_name 保留但不暴露给前端
+- 所有用户由后台管理员创建，不开放注册
+"""
+
+from typing import ClassVar
+
+from django.contrib.auth.models import AbstractUser
+from django.db import models, transaction
+from django.db.models import F
+
+from apps.accounts.models.sequence import Sequence
+
+
+class User(AbstractUser):
+    """系统用户:登录凭证为工号,平台管理员用 is_superuser 区分。"""
+
+    username = None
+    employee_code = models.CharField(
+        max_length=8, unique=True, blank=True, verbose_name="工号", db_comment="工号"
+    )
+    phone = models.CharField(
+        max_length=11, unique=True, verbose_name="手机号", db_comment="手机号"
+    )
+    real_name = models.CharField(max_length=50, verbose_name="姓名", db_comment="姓名")
+
+    USERNAME_FIELD = "employee_code"
+    REQUIRED_FIELDS: ClassVar[list[str]] = []
+
+    class Meta:
+        db_table = "accounts_user"
+        db_table_comment = "用户表"
+        verbose_name = "用户"
+        verbose_name_plural = verbose_name
+
+    def __str__(self):
+        return f"{self.employee_code} {self.real_name}"
+
+    def save(self, *args, **kwargs):
+        """创建时自动生成工号:
+        在事务内锁定 Sequence 行、加一、格式化为 8 位.
+        与 User 创建同一事务，任一环节失败整体回滚.
+        """
+        if not self.employee_code:
+            with transaction.atomic():
+                seq = (
+                    Sequence.objects.select_for_update()
+                    .filter(name="employee_code")
+                    .first()
+                )
+                if seq is None:
+                    # 首次使用，创建序列行
+                    seq = Sequence.objects.create(name="employee_code", current_value=0)
+                    # 创建后重新锁定，确保并发安全
+                    seq = Sequence.objects.select_for_update().get(pk=seq.pk)
+
+                Sequence.objects.filter(pk=seq.pk).update(
+                    current_value=F("current_value") + 1
+                )
+                seq.refresh_from_db()
+                self.employee_code = f"{seq.current_value:08d}"
+
+                super().save(*args, **kwargs)
+        else:
+            super().save(*args, **kwargs)
