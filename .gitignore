@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+*.sqlite3
+
+# Django
+backend/staticfiles/
+backend/media/
+
+# 环境变量
+.env
+
+# Node
+frontend/node_modules/
+frontend/dist/
+
+# IDE
+.idea/
+.vscode/
