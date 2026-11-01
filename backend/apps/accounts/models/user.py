@@ -50,7 +50,7 @@ class User(AbstractUser):
     real_name = models.CharField(max_length=50, verbose_name="姓名", db_comment="姓名")
 
     USERNAME_FIELD = "employee_code"
-    REQUIRED_FIELDS: ClassVar[list[str]] = []
+    REQUIRED_FIELDS: ClassVar[list[str]] = ["phone", "real_name"]
 
     objects = CustomUserManager()
 
