@@ -117,6 +117,9 @@ REST_FRAMEWORK = {
     "DEFAULT_PAGINATION_CLASS": "core.pagination.StandardPagination",
     "PAGE_SIZE": 20,
     "EXCEPTION_HANDLER": "core.exceptions.custom_exception_handler",
+    "DEFAULT_THROTTLE_RATES": {
+        "login": "5/min",  # 登录接口每分钟最多 5 次
+    },
 }
 
 
