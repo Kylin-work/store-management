@@ -25,6 +25,11 @@ class Role(models.Model):
     is_system = models.BooleanField(
         default=False, verbose_name="是否内置", db_comment="内置角色不可删除"
     )
+    is_active = models.BooleanField(
+        default=True,
+        verbose_name="是否启用",
+        db_comment="停用后该角色的用户无法登录",
+    )
     permissions = models.ManyToManyField(
         Permission,
         blank=True,
