@@ -42,7 +42,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "corsheaders",
     # 业务（包建好后逐个取消注释）
-    # "apps.accounts",
+    "apps.accounts",
     # "apps.stores",
     # "apps.members",
     # "apps.products",
