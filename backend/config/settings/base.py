@@ -44,7 +44,7 @@ INSTALLED_APPS = [
     # 业务（包建好后逐个取消注释）
     "apps.accounts",
     "apps.stores",
-    # "apps.members",
+    "apps.members",
     # "apps.products",
     # "apps.transactions",
     # "apps.dashboard",
