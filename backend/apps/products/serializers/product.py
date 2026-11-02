@@ -123,3 +123,17 @@ class ProductUpdateSerializer(serializers.Serializer):
         if validated_data:
             instance.save(update_fields=(*validated_data.keys(), "updated_at"))
         return instance
+
+
+class ProductAdjustStockSerializer(serializers.Serializer):
+    """商品库存调整序列化器."""
+
+    quantity = serializers.IntegerField(label="调整数量, 正数入库, 负数出库")
+    reason = serializers.CharField(
+        max_length=200, allow_blank=False, trim_whitespace=True, label="调整原因"
+    )
+
+    def validate_quantity(self, value):
+        if value == 0:
+            raise serializers.ValidationError("调整数量不能为 0")
+        return value

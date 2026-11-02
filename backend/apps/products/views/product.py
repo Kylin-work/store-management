@@ -8,6 +8,7 @@ from rest_framework.views import APIView
 from apps.logs.services.logger import log_operation
 from apps.products.models import Product
 from apps.products.serializers.product import (
+    ProductAdjustStockSerializer,
     ProductCreateSerializer,
     ProductListSerializer,
     ProductUpdateSerializer,
@@ -39,6 +40,12 @@ class CanUpdateProduct(HasPerm):
     """编辑商品权限."""
 
     required_perm = "product:update"
+
+
+class CanAdjustStock(HasPerm):
+    """商品库存调整权限."""
+
+    required_perm = "product:adjust_stock"
 
 
 class CanDeleteProduct(HasPerm):
@@ -223,3 +230,54 @@ class ProductDetailView(APIView):
         )
 
         return success(data={"id": product.pk, "is_active": False})
+
+# ---------------------------------------------------------------------------
+# 商品库存调整
+# ---------------------------------------------------------------------------
+
+class ProductAdjustStockView(APIView):
+    """商品库存调整, 仅店长."""
+
+    permission_classes = (IsAuthenticated, CanAdjustStock)
+
+    @transaction.atomic
+    def patch(self, request, pk):
+        """调整商品库存."""
+        store_id = _get_store_id(request)
+        product = _get_product(pk, store_id, for_update=True)
+
+        serializer = ProductAdjustStockSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        quantity_delta = serializer.validated_data["quantity"]
+        reason = serializer.validated_data["reason"]
+
+        stock_before = product.stock
+        new_stock = stock_before + quantity_delta
+        if new_stock < 0:
+            raise BizException(
+                code=BizCode.PARAM_INVALID,
+                message=f"库存不足, 当前库存 {stock_before}, 调整后不能为负",
+            )
+
+        product.stock = new_stock
+        product.save(update_fields=("stock", "updated_at"))
+
+        log_operation(
+            user=request.user,
+            module="product",
+            action="adjust_stock",
+            target_type="Product",
+            target_id=str(product.pk),
+            detail={
+                "stock_before": stock_before,
+                "stock_after": new_stock,
+                "reason": reason,
+            },
+        )
+
+        return success(
+            data=ProductListSerializer(
+                product, context={"request": request}
+            ).data
+        )

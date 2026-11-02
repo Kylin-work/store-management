@@ -23,5 +23,10 @@ class ProductsConfig(AppConfig):
                     "name": "查看/修改成本价",
                     "module": "product",
                 },
+                {
+                    "code": "product:adjust_stock",
+                    "name": "商品库存调整",
+                    "module": "product",
+                },
             ]
         )

@@ -8,6 +8,7 @@ from rest_framework.test import APITestCase
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.accounts.models import Permission, Role, User, UserStoreRole
+from apps.logs.models import OperationLog
 from apps.products.models import Product
 from apps.stores.models import Store
 
@@ -42,6 +43,7 @@ class ProductTestBase(APITestCase):
                 "product:update",
                 "product:delete",
                 "product:edit_cost",
+                "product:adjust_stock",
             )
         }
 
@@ -298,3 +300,85 @@ class ProductDeleteTest(ProductTestBase):
             reverse("product-detail", kwargs={"pk": self.product.pk})
         )
         self.assert_failed(response, status.HTTP_403_FORBIDDEN, expected_code=10002)
+
+
+class ProductAdjustStockTest(ProductTestBase):
+    """商品库存调整测试."""
+
+    def setUp(self):
+        super().setUp()
+        self.manager_role.permissions.add(self.perms["product:adjust_stock"])
+        self.product = self._create_product()
+
+    def _adjust(self, quantity, reason="测试调整"):
+        return self.client.patch(
+            reverse("product-adjust-stock", kwargs={"pk": self.product.pk}),
+            {"quantity": quantity, "reason": reason},
+            format="json",
+        )
+
+    def test_add_stock(self):
+        """入库."""
+        self._auth_manager()
+        response = self._adjust(50)
+        data = self.assert_success(response)
+        self.assertEqual(data["stock"], 150)
+
+    def test_deduct_stock(self):
+        """出库."""
+        self._auth_manager()
+        response = self._adjust(-30)
+        data = self.assert_success(response)
+        self.assertEqual(data["stock"], 70)
+
+    def test_deduct_to_zero(self):
+        """扣减到 0."""
+        self._auth_manager()
+        response = self._adjust(-100)
+        data = self.assert_success(response)
+        self.assertEqual(data["stock"], 0)
+
+    def test_deduct_exceed(self):
+        """扣减超过当前库存被拒."""
+        self._auth_manager()
+        response = self._adjust(-150)
+        self.assert_failed(response, status.HTTP_400_BAD_REQUEST, expected_code=10001)
+
+    def test_zero_rejected(self):
+        """调整数量为 0 被拒."""
+        self._auth_manager()
+        response = self._adjust(0)
+        self.assert_failed(response, status.HTTP_400_BAD_REQUEST, expected_code=10001)
+
+    def test_staff_cannot_adjust(self):
+        """店员无库存调整权限."""
+        self._auth_staff()
+        response = self._adjust(50)
+        self.assert_failed(response, status.HTTP_403_FORBIDDEN, expected_code=10002)
+
+    def test_cross_store_404(self):
+        """跨店调整库存返回 404."""
+        other = self._create_product(store=self.other_store, name="他店商品")
+        self._auth_manager()
+        response = self.client.patch(
+            reverse("product-adjust-stock", kwargs={"pk": other.pk}),
+            {"quantity": 10, "reason": "测试"},
+            format="json",
+        )
+        self.assert_failed(response, status.HTTP_404_NOT_FOUND)
+
+    def test_log_written(self):
+        """库存调整写入操作日志."""
+        self._auth_manager()
+        self._adjust(50, reason="新到货")
+
+        logs = OperationLog.objects.filter(
+            module="product",
+            action="adjust_stock",
+            target_id=str(self.product.pk),
+        )
+        self.assertEqual(logs.count(), 1)
+        log = logs.first()
+        self.assertEqual(log.detail["stock_before"], 100)
+        self.assertEqual(log.detail["stock_after"], 150)
+        self.assertEqual(log.detail["reason"], "新到货")
