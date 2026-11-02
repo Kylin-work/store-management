@@ -587,6 +587,98 @@ class AccountStatusTest(AccountTestBase):
         self.target.refresh_from_db()
         self.assertFalse(self.target.is_active)
 
+    def test_manager_disable_store_role_only(self):
+        """门店管理员停用员工时只影响当前门店任职."""
+        other_store = Store.objects.create(
+            code="S003",
+            name="测试门店C",
+            store_type="direct",
+        )
+        other_role = UserStoreRole.objects.create(
+            user=self.target,
+            store=other_store,
+            role=self.staff_role,
+        )
+
+        self._auth_manager()
+        response = self.client.patch(
+            self.url,
+            {"is_active": False},
+            format="json",
+        )
+        data = self.assert_success(response)
+
+        self.assertFalse(data["is_active"])
+
+        self.target.refresh_from_db()
+        self.assertTrue(self.target.is_active)
+
+        current_role = UserStoreRole.objects.get(
+            user=self.target,
+            store=self.store,
+        )
+        other_role.refresh_from_db()
+
+        self.assertFalse(current_role.is_active)
+        self.assertTrue(other_role.is_active)
+
+    def test_manager_enable_store_role_only(self):
+        """门店管理员只能恢复当前门店的任职."""
+        current_role = UserStoreRole.objects.get(
+            user=self.target,
+            store=self.store,
+        )
+        current_role.is_active = False
+        current_role.save(update_fields=["is_active"])
+
+        self._auth_manager()
+        response = self.client.patch(
+            self.url,
+            {"is_active": True},
+            format="json",
+        )
+        data = self.assert_success(response)
+
+        self.assertTrue(data["is_active"])
+
+        current_role.refresh_from_db()
+        self.target.refresh_from_db()
+
+        self.assertTrue(current_role.is_active)
+        self.assertTrue(self.target.is_active)
+
+    def test_manager_cannot_change_other_store_account(self):
+        """门店管理员不能修改其他门店员工的任职状态."""
+        other_store = Store.objects.create(
+            code="S003",
+            name="测试门店C",
+            store_type="direct",
+        )
+        other_user = User.objects.create_user(
+            employee_code=None,
+            password="Other@123456",
+            phone="13800000031",
+            real_name="其他门店员工",
+        )
+        UserStoreRole.objects.create(
+            user=other_user,
+            store=other_store,
+            role=self.staff_role,
+        )
+
+        self._auth_manager()
+        response = self.client.patch(
+            self._status_url(other_user.employee_code),
+            {"is_active": False},
+            format="json",
+        )
+
+        self.assert_failed(response, status.HTTP_404_NOT_FOUND)
+
+        other_user.refresh_from_db()
+        self.assertTrue(other_user.is_active)
+
+
     def test_invalid_is_active(self):
         """拒绝非布尔类型的状态值."""
         response = self.client.patch(

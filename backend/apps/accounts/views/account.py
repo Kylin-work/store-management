@@ -314,8 +314,22 @@ class AccountStatusView(APIView):
 
     @transaction.atomic
     def patch(self, request, employee_code):
-        """切换账号启用状态."""
-        user = _get_user(employee_code, for_update=True)
+        """切换全局账号或当前门店任职状态."""
+        is_superuser = request.user.is_superuser
+        store_id = None if is_superuser else getattr(request, "store_id", None)
+
+        if not is_superuser and store_id is None:
+            raise BizException(
+                code=BizCode.NOT_FOUND,
+                message="账号不存在",
+                http_status=status.HTTP_404_NOT_FOUND,
+            )
+
+        user = _get_user(
+            employee_code,
+            for_update=True,
+            store_id=store_id,
+        )
 
         is_active = request.data.get("is_active")
 
@@ -325,35 +339,71 @@ class AccountStatusView(APIView):
                 message="is_active 必须为布尔值",
             )
 
-        if user.is_active == is_active:
-            return success(
-                data={
-                    "employee_code": user.employee_code,
-                    "is_active": user.is_active,
-                }
+        if is_superuser:
+            if user.is_active == is_active:
+                return success(
+                    data={
+                        "employee_code": user.employee_code,
+                        "is_active": user.is_active,
+                    }
+                )
+
+            user.is_active = is_active
+            user.save(update_fields=("is_active",))
+
+            target_type = "User"
+            target_id = user.employee_code
+            detail = {"is_active": is_active}
+        else:
+            store_role = (
+                UserStoreRole.objects.select_for_update()
+                .filter(user=user, store_id=store_id)
+                .first()
             )
 
-        user.is_active = is_active
-        user.save(update_fields=("is_active",))
+            if store_role is None:
+                raise BizException(
+                    code=BizCode.NOT_FOUND,
+                    message="账号不存在",
+                    http_status=status.HTTP_404_NOT_FOUND,
+                )
+
+            if store_role.is_active == is_active:
+                return success(
+                    data={
+                        "employee_code": user.employee_code,
+                        "is_active": store_role.is_active,
+                    }
+                )
+
+            store_role.is_active = is_active
+            store_role.save(update_fields=("is_active",))
+
+            target_type = "UserStoreRole"
+            target_id = str(store_role.pk)
+            detail = {
+                "employee_code": user.employee_code,
+                "store_id": store_id,
+                "is_active": is_active,
+            }
 
         log_operation(
             user=request.user,
             module="account",
             action="enable" if is_active else "disable",
-            target_type="User",
-            target_id=user.employee_code,
-            detail={"is_active": is_active},
+            target_type=target_type,
+            target_id=target_id,
+            detail=detail,
         )
 
         return success(
             data={
                 "employee_code": user.employee_code,
-                "is_active": user.is_active,
+                "is_active": is_active,
             }
         )
 
 
-# ---------------------------------------------------------------------------
 # 账号门店角色调整
 # ---------------------------------------------------------------------------
 
