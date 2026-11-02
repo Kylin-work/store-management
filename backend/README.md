@@ -101,13 +101,14 @@ sudo mysql_tzinfo_to_sql /usr/share/zoneinfo | sudo mysql -u root -p mysql
 
 在 backend/.env 里配置：
 
-```
+```bash
 DB_NAME=store_management
 DB_USER=dj
 DB_PASSWORD=你的密码
 DB_HOST=127.0.0.1
 DB_PORT=3306
 ```
+如果使用 Docker Compose 部署，宿主机映射端口为 13306（MySQL）、16379（Redis）、18000（后端）。容器内部通信仍走默认端口，DB_HOST=db、DB_PORT=3306 无需修改。宿主机用客户端连容器 MySQL 时写 127.0.0.1:13306。
 
 ### 3. 迁移和初始化
 
