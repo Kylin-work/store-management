@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     # "apps.transactions",
     # "apps.dashboard",
     "apps.menus",
+    "apps.logs",
 ]
 
 MIDDLEWARE = [
