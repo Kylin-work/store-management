@@ -3,6 +3,7 @@
 from django.urls import path
 
 from apps.members.views.member import (
+    MemberAdjustPointsView,
     MemberChangeLevelView,
     MemberDetailView,
     MemberListCreateView,
@@ -21,5 +22,10 @@ urlpatterns = [
         "members/<int:pk>/level/",
         MemberChangeLevelView.as_view(),
         name="member-change-level",
+    ),
+    path(
+        "members/<int:pk>/points/",
+        MemberAdjustPointsView.as_view(),
+        name="member-adjust-points",
     ),
 ]

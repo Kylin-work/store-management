@@ -42,14 +42,15 @@ class MemberTestBase(APITestCase):
                 "member:update",
                 "member:recharge",
                 "member:change_level",
+                "member:adjust_points",
             )
         }
 
-        # 店长角色：全部权限
+        # 店长角色: 全部权限
         self.manager_role = Role.objects.create(code="store_manager", name="店长")
         self.manager_role.permissions.set(self.perms.values())
 
-        # 店员角色：除等级调整外的权限
+        # 店员角色: 除等级调整和积分调整外的权限
         self.staff_role = Role.objects.create(code="staff", name="店员")
         self.staff_role.permissions.set(
             [
@@ -113,7 +114,7 @@ class MemberTestBase(APITestCase):
         self.assertEqual(
             response.status_code,
             expected_status,
-            msg=f"接口响应异常：{response.data}",
+            msg=f"接口响应异常: {response.data}",
         )
         self.assertEqual(response.data["code"], 0)
         return response.data["data"]
@@ -122,7 +123,7 @@ class MemberTestBase(APITestCase):
         self.assertEqual(
             response.status_code,
             expected_status,
-            msg=f"接口响应异常：{response.data}",
+            msg=f"接口响应异常: {response.data}",
         )
         if expected_code is not None:
             self.assertEqual(response.data["code"], expected_code)
@@ -326,3 +327,77 @@ class MemberChangeLevelTest(MemberTestBase):
             format="json",
         )
         self.assert_failed(response, status.HTTP_403_FORBIDDEN, expected_code=10002)
+
+
+class MemberAdjustPointsTest(MemberTestBase):
+    """会员积分调整测试."""
+
+    def setUp(self):
+        super().setUp()
+        self.manager_role.permissions.add(self.perms["member:adjust_points"])
+
+        self.member = self._create_member()
+        self.member.points = 100
+        self.member.save(update_fields=["points"])
+
+    def _adjust(self, points, reason="测试调整"):
+        return self.client.patch(
+            reverse("member-adjust-points", kwargs={"pk": self.member.pk}),
+            {"points": points, "reason": reason},
+            format="json",
+        )
+
+    def test_add_points(self):
+        """增加积分."""
+        self._auth_manager()
+        response = self._adjust(50)
+        data = self.assert_success(response)
+        self.assertEqual(data["points"], 150)
+
+    def test_deduct_points(self):
+        """减少积分."""
+        self._auth_manager()
+        response = self._adjust(-30)
+        data = self.assert_success(response)
+        self.assertEqual(data["points"], 70)
+
+    def test_deduct_to_zero(self):
+        """扣减到 0."""
+        self._auth_manager()
+        response = self._adjust(-100)
+        data = self.assert_success(response)
+        self.assertEqual(data["points"], 0)
+
+    def test_deduct_exceed(self):
+        """扣减超过当前积分被拒."""
+        self._auth_manager()
+        response = self._adjust(-150)
+        self.assert_failed(response, status.HTTP_400_BAD_REQUEST, expected_code=10001)
+
+    def test_zero_points_rejected(self):
+        """调整数量为 0 被拒."""
+        self._auth_manager()
+        response = self._adjust(0)
+        self.assert_failed(response, status.HTTP_400_BAD_REQUEST, expected_code=10001)
+
+    def test_staff_cannot_adjust(self):
+        """店员无积分调整权限."""
+        self._auth_staff()
+        response = self._adjust(50)
+        self.assert_failed(response, status.HTTP_403_FORBIDDEN, expected_code=10002)
+
+    def test_log_written(self):
+        """积分调整写入操作日志."""
+        self._auth_manager()
+        self._adjust(50, reason="活动赠送")
+
+        logs = OperationLog.objects.filter(
+            module="member",
+            action="adjust_points",
+            target_id=str(self.member.pk),
+        )
+        self.assertEqual(logs.count(), 1)
+        log = logs.first()
+        self.assertEqual(log.detail["points_before"], 100)
+        self.assertEqual(log.detail["points_after"], 150)
+        self.assertEqual(log.detail["reason"], "活动赠送")

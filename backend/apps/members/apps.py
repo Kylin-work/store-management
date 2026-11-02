@@ -19,6 +19,11 @@ class MembersConfig(AppConfig):
                 {"code": "member:update", "name": "编辑会员", "module": "member"},
                 {"code": "member:recharge", "name": "会员充值", "module": "member"},
                 {
+                    "code": "member:adjust_points",
+                    "name": "会员积分调整",
+                    "module": "member",
+                },
+                {
                     "code": "member:change_level",
                     "name": "会员等级调整",
                     "module": "member",

@@ -107,3 +107,17 @@ class MemberChangeLevelSerializer(serializers.Serializer):
     """会员等级调整序列化器."""
 
     level = serializers.ChoiceField(choices=MemberLevel.choices, label="等级")
+
+
+class MemberAdjustPointsSerializer(serializers.Serializer):
+    """会员积分调整序列化器."""
+
+    points = serializers.IntegerField(label="调整数量, 正数增加, 负数减少")
+    reason = serializers.CharField(
+        max_length=200, allow_blank=False, trim_whitespace=True, label="调整原因"
+    )
+
+    def validate_points(self, value):
+        if value == 0:
+            raise serializers.ValidationError("调整数量不能为 0")
+        return value
