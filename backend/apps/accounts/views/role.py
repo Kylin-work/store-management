@@ -12,6 +12,7 @@ from apps.accounts.serializers.role import (
     RoleListSerializer,
     RoleUpdateSerializer,
 )
+from apps.logs.services.logger import log_operation
 from core.codes import BizCode
 from core.exceptions import BizException
 from core.pagination import StandardPagination
@@ -120,6 +121,19 @@ class RoleListCreateView(APIView):
         serializer.is_valid(raise_exception=True)
         role = serializer.save()
 
+        log_operation(
+            user=request.user,
+            module="role",
+            action="create",
+            target_type="Role",
+            target_id=role.code,
+            detail={
+                "code": role.code,
+                "name": role.name,
+                "permission_codes": [p.code for p in role.permissions.all()],
+            },
+        )
+
         role = _get_role_detail(role.pk)
 
         return success(
@@ -162,6 +176,19 @@ class RoleDetailView(APIView):
         )
         serializer.is_valid(raise_exception=True)
         serializer.save()
+
+        changed_fields = list(serializer.validated_data.keys())
+        log_operation(
+            user=request.user,
+            module="role",
+            action="update",
+            target_type="Role",
+            target_id=role.code,
+            detail={
+                "changed_fields": changed_fields,
+                "permission_codes": [p.code for p in role.permissions.all()],
+            },
+        )
 
         role = _get_role_detail(role.pk)
 
