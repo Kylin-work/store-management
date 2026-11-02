@@ -47,7 +47,7 @@ class BaseRoleSerializer(serializers.Serializer):
 
     @staticmethod
     def validate_permission_code_list(value):
-        """校验权限码是否存在且启用，并去重。"""
+        """校验权限码是否存在且启用,并去重。"""
         permission_codes = list(dict.fromkeys(value))
 
         if not permission_codes:
@@ -183,7 +183,7 @@ class RoleUpdateSerializer(BaseRoleSerializer):
 
     @transaction.atomic
     def update(self, instance, validated_data):
-        """更新角色，权限码全量替换。"""
+        """更新角色,权限码全量替换。"""
         permission_codes = validated_data.pop("permission_codes", None)
 
         update_fields = []

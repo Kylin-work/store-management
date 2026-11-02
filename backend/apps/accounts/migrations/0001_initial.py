@@ -8,105 +8,337 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
-        ('auth', '0012_alter_user_first_name_max_length'),
-        ('stores', '0001_initial'),
+        ("auth", "0012_alter_user_first_name_max_length"),
+        ("stores", "0001_initial"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Permission',
+            name="Permission",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('code', models.CharField(db_comment='格式 模块:动作，如 member:recharge', max_length=100, unique=True, verbose_name='权限码')),
-                ('name', models.CharField(db_comment='权限对应中文名称', max_length=50, verbose_name='权限名称')),
-                ('module', models.CharField(db_comment='用于分组展示的所属模块名称', max_length=100, verbose_name='所属模块')),
-                ('is_active', models.BooleanField(db_comment='是否启用？停用后不再出现在角色授权列表', default=True, verbose_name='状态')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "code",
+                    models.CharField(
+                        db_comment="格式 模块:动作,如 member:recharge",
+                        max_length=100,
+                        unique=True,
+                        verbose_name="权限码",
+                    ),
+                ),
+                (
+                    "name",
+                    models.CharField(
+                        db_comment="权限对应中文名称",
+                        max_length=50,
+                        verbose_name="权限名称",
+                    ),
+                ),
+                (
+                    "module",
+                    models.CharField(
+                        db_comment="用于分组展示的所属模块名称",
+                        max_length=100,
+                        verbose_name="所属模块",
+                    ),
+                ),
+                (
+                    "is_active",
+                    models.BooleanField(
+                        db_comment="是否启用？停用后不再出现在角色授权列表",
+                        default=True,
+                        verbose_name="状态",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': '权限码',
-                'verbose_name_plural': '权限码',
-                'db_table': 'accounts_permission',
-                'db_table_comment': '权限码表',
-                'ordering': ('module', 'code'),
+                "verbose_name": "权限码",
+                "verbose_name_plural": "权限码",
+                "db_table": "accounts_permission",
+                "db_table_comment": "权限码表",
+                "ordering": ("module", "code"),
             },
         ),
         migrations.CreateModel(
-            name='Sequence',
+            name="Sequence",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(db_comment='序列名', max_length=50, unique=True, verbose_name='序列名')),
-                ('current_value', models.PositiveIntegerField(db_comment='当前值', default=0, verbose_name='当前值')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "name",
+                    models.CharField(
+                        db_comment="序列名",
+                        max_length=50,
+                        unique=True,
+                        verbose_name="序列名",
+                    ),
+                ),
+                (
+                    "current_value",
+                    models.PositiveIntegerField(
+                        db_comment="当前值", default=0, verbose_name="当前值"
+                    ),
+                ),
             ],
             options={
-                'verbose_name': '序列',
-                'verbose_name_plural': '序列',
-                'db_table': 'accounts_sequence',
+                "verbose_name": "序列",
+                "verbose_name_plural": "序列",
+                "db_table": "accounts_sequence",
             },
         ),
         migrations.CreateModel(
-            name='User',
+            name="User",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('password', models.CharField(max_length=128, verbose_name='password')),
-                ('last_login', models.DateTimeField(blank=True, null=True, verbose_name='last login')),
-                ('is_superuser', models.BooleanField(default=False, help_text='Designates that this user has all permissions without explicitly assigning them.', verbose_name='superuser status')),
-                ('first_name', models.CharField(blank=True, max_length=150, verbose_name='first name')),
-                ('last_name', models.CharField(blank=True, max_length=150, verbose_name='last name')),
-                ('email', models.EmailField(blank=True, max_length=254, verbose_name='email address')),
-                ('is_staff', models.BooleanField(default=False, help_text='Designates whether the user can log into this admin site.', verbose_name='staff status')),
-                ('is_active', models.BooleanField(default=True, help_text='Designates whether this user should be treated as active. Unselect this instead of deleting accounts.', verbose_name='active')),
-                ('date_joined', models.DateTimeField(default=django.utils.timezone.now, verbose_name='date joined')),
-                ('employee_code', models.CharField(blank=True, db_comment='工号', max_length=8, unique=True, verbose_name='工号')),
-                ('phone', models.CharField(db_comment='手机号', max_length=11, unique=True, verbose_name='手机号')),
-                ('real_name', models.CharField(db_comment='姓名', max_length=50, verbose_name='姓名')),
-                ('groups', models.ManyToManyField(blank=True, help_text='The groups this user belongs to. A user will get all permissions granted to each of their groups.', related_name='user_set', related_query_name='user', to='auth.group', verbose_name='groups')),
-                ('user_permissions', models.ManyToManyField(blank=True, help_text='Specific permissions for this user.', related_name='user_set', related_query_name='user', to='auth.permission', verbose_name='user permissions')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("password", models.CharField(max_length=128, verbose_name="password")),
+                (
+                    "last_login",
+                    models.DateTimeField(
+                        blank=True, null=True, verbose_name="last login"
+                    ),
+                ),
+                (
+                    "is_superuser",
+                    models.BooleanField(
+                        default=False,
+                        help_text="Designates that this user has all permissions without explicitly assigning them.",
+                        verbose_name="superuser status",
+                    ),
+                ),
+                (
+                    "first_name",
+                    models.CharField(
+                        blank=True, max_length=150, verbose_name="first name"
+                    ),
+                ),
+                (
+                    "last_name",
+                    models.CharField(
+                        blank=True, max_length=150, verbose_name="last name"
+                    ),
+                ),
+                (
+                    "email",
+                    models.EmailField(
+                        blank=True, max_length=254, verbose_name="email address"
+                    ),
+                ),
+                (
+                    "is_staff",
+                    models.BooleanField(
+                        default=False,
+                        help_text="Designates whether the user can log into this admin site.",
+                        verbose_name="staff status",
+                    ),
+                ),
+                (
+                    "is_active",
+                    models.BooleanField(
+                        default=True,
+                        help_text="Designates whether this user should be treated as active. Unselect this instead of deleting accounts.",
+                        verbose_name="active",
+                    ),
+                ),
+                (
+                    "date_joined",
+                    models.DateTimeField(
+                        default=django.utils.timezone.now, verbose_name="date joined"
+                    ),
+                ),
+                (
+                    "employee_code",
+                    models.CharField(
+                        blank=True,
+                        db_comment="工号",
+                        max_length=8,
+                        unique=True,
+                        verbose_name="工号",
+                    ),
+                ),
+                (
+                    "phone",
+                    models.CharField(
+                        db_comment="手机号",
+                        max_length=11,
+                        unique=True,
+                        verbose_name="手机号",
+                    ),
+                ),
+                (
+                    "real_name",
+                    models.CharField(
+                        db_comment="姓名", max_length=50, verbose_name="姓名"
+                    ),
+                ),
+                (
+                    "groups",
+                    models.ManyToManyField(
+                        blank=True,
+                        help_text="The groups this user belongs to. A user will get all permissions granted to each of their groups.",
+                        related_name="user_set",
+                        related_query_name="user",
+                        to="auth.group",
+                        verbose_name="groups",
+                    ),
+                ),
+                (
+                    "user_permissions",
+                    models.ManyToManyField(
+                        blank=True,
+                        help_text="Specific permissions for this user.",
+                        related_name="user_set",
+                        related_query_name="user",
+                        to="auth.permission",
+                        verbose_name="user permissions",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': '用户',
-                'verbose_name_plural': '用户',
-                'db_table': 'accounts_user',
-                'db_table_comment': '用户表',
+                "verbose_name": "用户",
+                "verbose_name_plural": "用户",
+                "db_table": "accounts_user",
+                "db_table_comment": "用户表",
             },
             managers=[
-                ('objects', django.contrib.auth.models.UserManager()),
+                ("objects", django.contrib.auth.models.UserManager()),
             ],
         ),
         migrations.CreateModel(
-            name='Role',
+            name="Role",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(db_comment='如店长、店员', max_length=50, unique=True, verbose_name='角色名称')),
-                ('code', models.CharField(db_comment='如 store_manager、staff', max_length=50, unique=True, verbose_name='角色编码')),
-                ('is_system', models.BooleanField(db_comment='内置角色不可删除', default=False, verbose_name='是否内置')),
-                ('permissions', models.ManyToManyField(blank=True, db_table='accounts_role_permission', related_name='roles', to='accounts.permission', verbose_name='权限码')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "name",
+                    models.CharField(
+                        db_comment="如店长、店员",
+                        max_length=50,
+                        unique=True,
+                        verbose_name="角色名称",
+                    ),
+                ),
+                (
+                    "code",
+                    models.CharField(
+                        db_comment="如 store_manager、staff",
+                        max_length=50,
+                        unique=True,
+                        verbose_name="角色编码",
+                    ),
+                ),
+                (
+                    "is_system",
+                    models.BooleanField(
+                        db_comment="内置角色不可删除",
+                        default=False,
+                        verbose_name="是否内置",
+                    ),
+                ),
+                (
+                    "permissions",
+                    models.ManyToManyField(
+                        blank=True,
+                        db_table="accounts_role_permission",
+                        related_name="roles",
+                        to="accounts.permission",
+                        verbose_name="权限码",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': '角色',
-                'verbose_name_plural': '角色',
-                'db_table': 'accounts_role',
-                'db_table_comment': '角色表',
-                'ordering': ('code',),
+                "verbose_name": "角色",
+                "verbose_name_plural": "角色",
+                "db_table": "accounts_role",
+                "db_table_comment": "角色表",
+                "ordering": ("code",),
             },
         ),
         migrations.CreateModel(
-            name='UserStoreRole',
+            name="UserStoreRole",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('role', models.ForeignKey(db_comment='角色', on_delete=django.db.models.deletion.PROTECT, related_name='user_store_roles', to='accounts.role', verbose_name='角色')),
-                ('store', models.ForeignKey(db_comment='门店', on_delete=django.db.models.deletion.PROTECT, related_name='user_roles', to='stores.store', verbose_name='门店')),
-                ('user', models.ForeignKey(db_comment='用户', on_delete=django.db.models.deletion.CASCADE, related_name='store_roles', to=settings.AUTH_USER_MODEL, verbose_name='用户')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "role",
+                    models.ForeignKey(
+                        db_comment="角色",
+                        on_delete=django.db.models.deletion.PROTECT,
+                        related_name="user_store_roles",
+                        to="accounts.role",
+                        verbose_name="角色",
+                    ),
+                ),
+                (
+                    "store",
+                    models.ForeignKey(
+                        db_comment="门店",
+                        on_delete=django.db.models.deletion.PROTECT,
+                        related_name="user_roles",
+                        to="stores.store",
+                        verbose_name="门店",
+                    ),
+                ),
+                (
+                    "user",
+                    models.ForeignKey(
+                        db_comment="用户",
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="store_roles",
+                        to=settings.AUTH_USER_MODEL,
+                        verbose_name="用户",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': '用户门店角色',
-                'verbose_name_plural': '用户门店角色',
-                'db_table': 'accounts_user_store_role',
-                'db_table_comment': '用户门店角色关联表',
-                'constraints': [models.UniqueConstraint(fields=('user', 'store'), name='uniq_user_store_role')],
+                "verbose_name": "用户门店角色",
+                "verbose_name_plural": "用户门店角色",
+                "db_table": "accounts_user_store_role",
+                "db_table_comment": "用户门店角色关联表",
+                "constraints": [
+                    models.UniqueConstraint(
+                        fields=("user", "store"), name="uniq_user_store_role"
+                    )
+                ],
             },
         ),
     ]

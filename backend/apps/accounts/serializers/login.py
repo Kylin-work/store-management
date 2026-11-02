@@ -2,15 +2,15 @@
 登录序列化器。
 
 校验工号、密码及用户门店关联关系。
-认证通过后，将用户、门店及角色信息交给视图层签发 JWT。
+认证通过后,将用户、门店及角色信息交给视图层签发 JWT。
 """
 
+from core.codes import BizCode
+from core.exceptions import BizException
 from django.contrib.auth import authenticate
 from rest_framework import serializers
 
 from apps.accounts.models import UserStoreRole
-from core.codes import BizCode
-from core.exceptions import BizException
 
 
 class LoginSerializer(serializers.Serializer):
@@ -62,7 +62,7 @@ class LoginSerializer(serializers.Serializer):
         store_id = attrs.get("store_id")
 
         # 1. 验证工号和密码
-        # username 是 Django authenticate 的固定参数名，实际传入的是工号
+        # username 是 Django authenticate 的固定参数名,实际传入的是工号
         user = authenticate(
             request=self.context.get("request"),
             username=employee_code,
@@ -79,7 +79,7 @@ class LoginSerializer(serializers.Serializer):
         if not user.is_active:
             raise BizException(
                 BizCode.ACCOUNT_DISABLED,
-                "账号状态错误，请联系管理员",
+                "账号状态错误,请联系管理员",
             )
 
         # 3. 平台超级管理员不绑定具体门店
@@ -114,7 +114,7 @@ class LoginSerializer(serializers.Serializer):
         if user_store_role is None:
             raise BizException(
                 BizCode.STORE_NOT_ASSIGNED,
-                "门店选择错误，请重试",
+                "门店选择错误,请重试",
             )
 
         # 6. 组装认证结果

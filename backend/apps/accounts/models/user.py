@@ -1,9 +1,9 @@
 """自定义用户模型。
 
 - 去掉 username,用 employee_code(8 位纯数字,自动生成)登录
-- phone 作为联系方式，唯一但不参与认证
+- phone 作为联系方式,唯一但不参与认证
 - first_name / last_name 保留但不暴露给前端
-- 所有用户由后台管理员创建，不开放注册
+- 所有用户由后台管理员创建,不开放注册
 """
 
 from typing import ClassVar
@@ -16,7 +16,7 @@ from apps.accounts.models.sequence import Sequence
 
 
 class CustomUserManager(UserManager):
-    """自定义管理器：去掉 username 依赖，适配 employee_code 为登录字段。"""
+    """自定义管理器：去掉 username 依赖,适配 employee_code 为登录字段。"""
 
     def create_user(self, employee_code=None, password=None, **extra_fields):
         """employee_code 为 None 时由 save() 自动生成。"""
@@ -66,12 +66,12 @@ class User(AbstractUser):
     def save(self, *args, **kwargs):
         """创建时自动生成工号。
 
-        序列行由 data migration 预置，此处直接锁定、加一、格式化为 8 位。
-        与 User 创建同一事务，任一环节失败整体回滚。
+        序列行由 data migration 预置,此处直接锁定、加一、格式化为 8 位。
+        与 User 创建同一事务,任一环节失败整体回滚。
         """
         if not self.employee_code:
             with transaction.atomic():
-                # 锁定序列行，防止并发拿到相同工号
+                # 锁定序列行,防止并发拿到相同工号
                 seq = Sequence.objects.select_for_update().get(name="employee_code")
                 Sequence.objects.filter(pk=seq.pk).update(
                     current_value=F("current_value") + 1

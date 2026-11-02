@@ -1,14 +1,13 @@
 """
 当前用户信息视图。
 
-返回当前登录用户的基本信息及认证上下文，
+返回当前登录用户的基本信息及认证上下文,
 用于前端初始化用户信息、门店信息和权限信息。
 """
 
+from core.responses import success
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
-
-from core.responses import success
 
 
 class MeView(APIView):
@@ -16,7 +15,7 @@ class MeView(APIView):
 
     permission_classes = (IsAuthenticated,)
 
-    # 如果全局已经配置 StoreJWTAuthentication，可以省略此配置
+    # 如果全局已经配置 StoreJWTAuthentication,可以省略此配置
     # authentication_classes = (StoreJWTAuthentication,)
 
     def get(self, request):

@@ -19,7 +19,7 @@ class AccountTestBase(APITestCase):
     STAFF_PASSWORD = "Staff@123456"
 
     def setUp(self):
-        # 禁用限流，避免测试受到请求频率影响。
+        # 禁用限流,避免测试受到请求频率影响。
         throttle_patcher = patch(
             "rest_framework.throttling.ScopedRateThrottle.get_rate",
             return_value=None,
@@ -125,7 +125,7 @@ class AccountTestBase(APITestCase):
         )
 
     def _make_token(self, user, store_id=None, role_code=None):
-        """直接签发 JWT，绕过登录接口。"""
+        """直接签发 JWT,绕过登录接口。"""
         refresh = RefreshToken.for_user(user)
         refresh["store_id"] = store_id
         refresh["role_code"] = role_code
@@ -268,7 +268,7 @@ class AccountCreateTest(AccountTestBase):
             expected_status=status.HTTP_201_CREATED,
         )
 
-        # 工号自动生成，8 位纯数字。
+        # 工号自动生成,8 位纯数字。
         self.assertEqual(len(data["employee_code"]), 8)
         self.assertTrue(data["employee_code"].isdigit())
         self.assertEqual(data["phone"], "13800000010")
@@ -284,7 +284,7 @@ class AccountCreateTest(AccountTestBase):
         )
 
     def test_employee_code_increments(self):
-        """连续创建账号，工号递增。"""
+        """连续创建账号,工号递增。"""
         response1 = self.client.post(
             self.list_url,
             self._create_payload(phone="13800000011"),
@@ -600,7 +600,7 @@ class AccountStoreRolesTest(AccountTestBase):
 
         self.assertEqual(len(data["store_roles"]), 2)
 
-        # 原有关联被替换，最终保留两个新关联。
+        # 原有关联被替换,最终保留两个新关联。
         self.assertEqual(
             UserStoreRole.objects.filter(user=self.target).count(),
             2,

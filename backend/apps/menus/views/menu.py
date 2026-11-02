@@ -1,18 +1,18 @@
 """菜单视图。"""
 
+from core.responses import success
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 
 from apps.menus.models import Menu
 from apps.menus.serializers.menu import MenuTreeSerializer
-from core.responses import success
 
 
 def _build_menu_tree(menus, perm_set, is_superuser):
     """按权限过滤并组装菜单树。
 
     menus: 已按 sort 排序的全部启用菜单
-    perm_set: 当前用户权限码集合，超级管理员传 None
+    perm_set: 当前用户权限码集合,超级管理员传 None
     is_superuser: 是否超级管理员
     """
     # 按 parent_id 分组
@@ -34,7 +34,7 @@ def _build_menu_tree(menus, perm_set, is_superuser):
             # 递归处理子菜单
             filtered_children = _filter_and_build(menu.id)
 
-            # 父菜单有子菜单配置但全部被过滤，且父菜单自身无路由，则剔除
+            # 父菜单有子菜单配置但全部被过滤,且父菜单自身无路由,则剔除
             has_children_configured = bool(children_map.get(menu.id))
             if has_children_configured and not filtered_children and not menu.path:
                 continue

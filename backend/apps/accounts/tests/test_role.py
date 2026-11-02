@@ -19,7 +19,7 @@ class RoleTestBase(APITestCase):
     STAFF_PASSWORD = "Staff@123456"
 
     def setUp(self):
-        # 禁用限流，避免测试受到请求频率影响。
+        # 禁用限流,避免测试受到请求频率影响。
         throttle_patcher = patch(
             "rest_framework.throttling.ScopedRateThrottle.get_rate",
             return_value=None,
@@ -133,7 +133,7 @@ class RoleTestBase(APITestCase):
         )
 
     def _make_token(self, user, store_id=None, role_code=None):
-        """直接签发 JWT，绕过登录接口。"""
+        """直接签发 JWT,绕过登录接口。"""
         refresh = RefreshToken.for_user(user)
         refresh["store_id"] = store_id
         refresh["role_code"] = role_code
@@ -250,7 +250,7 @@ class RoleListTest(RoleTestBase):
         )
 
     def test_list_contains_user_count(self):
-        """列表返回 user_count，按用户去重。"""
+        """列表返回 user_count,按用户去重。"""
         self._auth_superuser()
 
         response = self.client.get(self.list_url)

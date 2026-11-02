@@ -92,7 +92,7 @@ class AccountCreateSerializer(serializers.Serializer):
         return value
 
     def validate_store_roles(self, value):
-        """校验门店和角色是否有效，以及门店是否重复。"""
+        """校验门店和角色是否有效,以及门店是否重复。"""
         if not value:
             raise serializers.ValidationError("至少分配一个门店角色")
 
@@ -116,7 +116,7 @@ class AccountCreateSerializer(serializers.Serializer):
                 f"门店不存在或已停用：{sorted(missing_store_ids)}"
             )
 
-        # 校验角色，并缓存角色对象，避免 create 时逐条查询
+        # 校验角色,并缓存角色对象,避免 create 时逐条查询
         role_codes = {item["role_code"] for item in value}
         roles = Role.objects.filter(
             code__in=role_codes,
@@ -183,7 +183,7 @@ class AccountUpdateSerializer(serializers.Serializer):
     )
 
     def validate_phone(self, value):
-        """手机号唯一性校验，排除当前账号。"""
+        """手机号唯一性校验,排除当前账号。"""
         queryset = User.objects.filter(phone=value)
 
         if self.instance:

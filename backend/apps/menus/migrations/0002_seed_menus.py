@@ -1,7 +1,7 @@
 """初始化菜单数据。
 
 一级菜单按模块划分,permission_code 对应各模块的列表权限。
-后续业务模块开发时，通过新的 data migration 追加二级节点。
+后续业务模块开发时,通过新的 data migration 追加二级节点。
 """
 
 from django.db import migrations
@@ -53,7 +53,7 @@ MENUS = [
 
 
 def seed_menus(apps, schema_editor):
-    """创建一级菜单，已存在则跳过。"""
+    """创建一级菜单,已存在则跳过。"""
     Menu = apps.get_model("menus", "Menu")
     for item in MENUS:
         Menu.objects.get_or_create(

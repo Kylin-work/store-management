@@ -18,7 +18,7 @@ class MeTestBase(APITestCase):
     admin_password = "Admin@123456"
 
     def setUp(self):
-        # 禁用 ScopedRateThrottle，避免限流影响测试。
+        # 禁用 ScopedRateThrottle,避免限流影响测试。
         throttle_patcher = patch(
             "rest_framework.throttling.ScopedRateThrottle.get_rate",
             return_value=None,
@@ -83,7 +83,7 @@ class MeTestBase(APITestCase):
         )
 
     def _make_token(self, user, store_id=None, role_code=None):
-        """直接签发访问令牌，绕过登录接口。"""
+        """直接签发访问令牌,绕过登录接口。"""
         refresh = RefreshToken.for_user(user)
         refresh["store_id"] = store_id
         refresh["role_code"] = role_code
@@ -125,7 +125,7 @@ class MeTestBase(APITestCase):
         self.assertEqual(
             response.status_code,
             status.HTTP_401_UNAUTHORIZED,
-            msg=f"预期返回 401，实际响应：{response.data}",
+            msg=f"预期返回 401,实际响应：{response.data}",
         )
 
 
@@ -149,7 +149,7 @@ class MeSuccessTest(MeTestBase):
         self.assertEqual(data["context"]["store_id"], self.store.pk)
         self.assertEqual(data["context"]["role_code"], self.role.code)
 
-        # 仅返回启用的权限码，并保持稳定排序。
+        # 仅返回启用的权限码,并保持稳定排序。
         self.assertEqual(
             data["permissions"],
             ["account:create", "account:list"],
@@ -160,7 +160,7 @@ class MeSuccessTest(MeTestBase):
         )
 
     def test_superuser_me(self):
-        """超级管理员的 permissions 为 None，表示拥有全部权限。"""
+        """超级管理员的 permissions 为 None,表示拥有全部权限。"""
         self._authenticate(self._admin_token())
 
         response = self._get_me()
@@ -188,7 +188,7 @@ class MeFailTest(MeTestBase):
         self.assert_unauthorized(response)
 
     def test_store_role_removed(self):
-        """用户门店角色关系被删除后，旧 token 失效。"""
+        """用户门店角色关系被删除后,旧 token 失效。"""
         token = self._normal_token()
         self.user_store_role.delete()
 
@@ -198,7 +198,7 @@ class MeFailTest(MeTestBase):
         self.assert_unauthorized(response)
 
     def test_store_disabled(self):
-        """门店停用后，旧 token 失效。"""
+        """门店停用后,旧 token 失效。"""
         token = self._normal_token()
 
         self.store.is_active = False
@@ -210,7 +210,7 @@ class MeFailTest(MeTestBase):
         self.assert_unauthorized(response)
 
     def test_role_disabled(self):
-        """角色停用后，旧 token 失效。"""
+        """角色停用后,旧 token 失效。"""
         token = self._normal_token()
 
         self.role.is_active = False
@@ -222,7 +222,7 @@ class MeFailTest(MeTestBase):
         self.assert_unauthorized(response)
 
     def test_user_disabled(self):
-        """用户停用后，旧 token 失效。"""
+        """用户停用后,旧 token 失效。"""
         token = self._normal_token()
 
         self.user.is_active = False

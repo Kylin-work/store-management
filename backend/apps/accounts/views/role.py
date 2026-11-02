@@ -1,5 +1,10 @@
 """角色管理视图。"""
 
+from core.codes import BizCode
+from core.exceptions import BizException
+from core.pagination import StandardPagination
+from core.permissions import HasPerm
+from core.responses import success
 from django.db import transaction
 from django.db.models import Count
 from rest_framework import status
@@ -13,11 +18,6 @@ from apps.accounts.serializers.role import (
     RoleUpdateSerializer,
 )
 from apps.logs.services.logger import log_operation
-from core.codes import BizCode
-from core.exceptions import BizException
-from core.pagination import StandardPagination
-from core.permissions import HasPerm
-from core.responses import success
 
 # ---------------------------------------------------------------------------
 # 权限类
@@ -77,7 +77,7 @@ def _get_role_queryset():
 
 
 def _get_role_detail(pk) -> Role:
-    """获取角色详情，预加载权限和用户数量。"""
+    """获取角色详情,预加载权限和用户数量。"""
     return _get_role_queryset().get(pk=pk)
 
 
@@ -97,7 +97,7 @@ class RoleListCreateView(APIView):
         return [IsAuthenticated(), permission_class()]
 
     def get(self, request):
-        """角色列表，分页。"""
+        """角色列表,分页。"""
         queryset = _get_role_queryset().order_by("code", "pk")
 
         paginator = StandardPagination()
@@ -201,7 +201,7 @@ class RoleDetailView(APIView):
 
 
 class PermissionListView(APIView):
-    """权限码列表，按模块分组。"""
+    """权限码列表,按模块分组。"""
 
     permission_classes = (IsAuthenticated, CanListPermission)
 

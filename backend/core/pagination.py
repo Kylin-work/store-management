@@ -19,10 +19,10 @@ from rest_framework.response import Response
 class StandardPagination(PageNumberPagination):
     page_size = 20  # 默认每页 20 条
     page_size_query_param = "page_size"  # 允许前端用 ?page_size=50 覆盖
-    max_page_size = 100  # 单页上限，防止一次拉太多
+    max_page_size = 100  # 单页上限,防止一次拉太多
 
     def get_paginated_response(self, data):
-        """重写分页响应结构，字段名与前端约定一致。"""
+        """重写分页响应结构,字段名与前端约定一致。"""
         return Response(
             OrderedDict(
                 [

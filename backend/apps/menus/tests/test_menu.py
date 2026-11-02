@@ -155,7 +155,7 @@ class MenuSuccessTest(MenuTestBase):
     """菜单接口成功场景。"""
 
     def test_superuser_sees_all_active_menus(self):
-        """超级管理员看到全部启用菜单（含无权限码的），停用的不出现。"""
+        """超级管理员看到全部启用菜单(含无权限码的),停用的不出现。"""
         self._auth_superuser()
         data = self._get_menus()
 
@@ -174,7 +174,7 @@ class MenuSuccessTest(MenuTestBase):
         codes = self._menu_codes(data)
         self.assertIn("member_manage", codes)  # 有 member:list
         self.assertIn("account_manage", codes)  # 有 account:list
-        self.assertIn("public_home", codes)  # 无权限码，所有人可见
+        self.assertIn("public_home", codes)  # 无权限码,所有人可见
         self.assertNotIn("dashboard_view", codes)  # 无 dashboard:view
         self.assertNotIn("disabled_menu", codes)
 
@@ -214,7 +214,7 @@ class MenuPermissionChangeTest(MenuTestBase):
     """权限变更后菜单实时变化。"""
 
     def test_remove_permission_hides_menu(self):
-        """摘掉权限码后，对应菜单立即消失。"""
+        """摘掉权限码后,对应菜单立即消失。"""
         self._auth_manager()
         data = self._get_menus()
         self.assertIn("member_manage", self._menu_codes(data))
@@ -226,7 +226,7 @@ class MenuPermissionChangeTest(MenuTestBase):
         self.assertNotIn("member_manage", self._menu_codes(data))
 
     def test_add_permission_shows_menu(self):
-        """分配权限码后，对应菜单立即出现。"""
+        """分配权限码后,对应菜单立即出现。"""
         self._auth_manager()
         data = self._get_menus()
         self.assertNotIn("dashboard_view", self._menu_codes(data))

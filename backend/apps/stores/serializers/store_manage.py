@@ -56,7 +56,7 @@ class StoreManageSerializer(serializers.ModelSerializer):
         }
 
     def validate_code(self, value):
-        """门店编码唯一性校验，统一转大写。"""
+        """门店编码唯一性校验,统一转大写。"""
 
         value = value.strip().upper()
 

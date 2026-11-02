@@ -123,7 +123,7 @@ class LoginTestBase(APITestCase):
     def assert_login_failed(self, response, expected_code, data_is_none=True):
         """统一验证登录失败响应。
 
-        data_is_none=False 用于入参校验失败场景，此时 data 是字段级错误字典。
+        data_is_none=False 用于入参校验失败场景,此时 data 是字段级错误字典。
         """
         self.assertEqual(
             response.status_code,
@@ -159,7 +159,7 @@ class LoginSuccessTest(LoginTestBase):
     """登录成功场景。"""
 
     def test_login_with_store(self):
-        """普通用户选门店登录成功，Token 带 store_id 和 role_code。"""
+        """普通用户选门店登录成功,Token 带 store_id 和 role_code。"""
         response = self._login(
             self.user.employee_code,
             "Test@123456",
@@ -246,7 +246,7 @@ class LoginFailTest(LoginTestBase):
         self.assert_login_failed(response, 20001)
 
     def test_employee_code_not_exist(self):
-        """工号不存在返回 20001，防止用户枚举。"""
+        """工号不存在返回 20001,防止用户枚举。"""
         response = self._login(
             "99999999",
             "Test@123456",
@@ -275,7 +275,7 @@ class LoginFailTest(LoginTestBase):
         self.assert_login_failed(response, 20003)
 
     def test_disabled_user(self):
-        """停用用户登录返回 20001，防止账号状态泄露。"""
+        """停用用户登录返回 20001,防止账号状态泄露。"""
         response = self._login(
             self.disabled_user.employee_code,
             "Test@123456",
@@ -285,7 +285,7 @@ class LoginFailTest(LoginTestBase):
         self.assert_login_failed(response, 20001)
 
     def test_inactive_store(self):
-        """门店停用后不能登录，返回 20003。"""
+        """门店停用后不能登录,返回 20003。"""
         self.store.is_active = False
         self.store.save(update_fields=["is_active"])
 

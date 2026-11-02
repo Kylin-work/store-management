@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 # backend/config/settings/base.py -> backend/
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
-# 加载 backend/.env（如果存在）
+# 加载 backend/.env(如果存在)
 load_dotenv(BASE_DIR / ".env")
 
 
@@ -41,7 +41,7 @@ INSTALLED_APPS = [
     # 第三方
     "rest_framework",
     "corsheaders",
-    # 业务（包建好后逐个取消注释）
+    # 业务(包建好后逐个取消注释)
     "apps.accounts",
     "apps.stores",
     "apps.members",
@@ -84,7 +84,7 @@ WSGI_APPLICATION = "config.wsgi.application"
 
 
 # ---------------------------------------------------------------------------
-# 数据库（具体配置在 dev.py / prod.py）
+# 数据库(具体配置在 dev.py / prod.py)
 # ---------------------------------------------------------------------------
 
 DATABASES: dict = {}

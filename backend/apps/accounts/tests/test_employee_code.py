@@ -44,17 +44,17 @@ class EmployeeCodeTest(TestCase):
         self.assertEqual(user.employee_code, expected_code)
 
     def test_sequence_seeded(self):
-        """序列行由 data migration 预置，初始值为 0。"""
+        """序列行由 data migration 预置,初始值为 0。"""
         self.assertEqual(self.sequence.current_value, 0)
 
     def test_auto_generate_8_digit(self):
-        """创建用户时工号自动生成，8 位纯数字。"""
+        """创建用户时工号自动生成,8 位纯数字。"""
         user = self._create_user()
 
         self._assert_generated_code(user, "00000001")
 
     def test_sequence_increments(self):
-        """连续创建用户，工号递增。"""
+        """连续创建用户,工号递增。"""
         users = [
             self._create_user(
                 phone=f"1380000000{i}",
@@ -82,7 +82,7 @@ class EmployeeCodeTest(TestCase):
         self.assertEqual(self.sequence.current_value, 0)
 
     def test_manual_code_does_not_consume_sequence(self):
-        """手动指定工号后，下一次自动生成仍从 00000001 开始。"""
+        """手动指定工号后,下一次自动生成仍从 00000001 开始。"""
         self._create_user(employee_code="99999999")
 
         user = self._create_user(

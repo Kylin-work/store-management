@@ -8,7 +8,7 @@ from django.db import models
 
 
 class Sequence(models.Model):
-    """全局序列，用于生成连续、无空洞的业务编号。"""
+    """全局序列,用于生成连续、无空洞的业务编号。"""
 
     name = models.CharField(
         max_length=50, unique=True, verbose_name="序列名", db_comment="序列名"

@@ -19,7 +19,7 @@ class OperationLogModelTest(TestCase):
         )
 
     def test_create_log(self):
-        """创建日志记录，字段正确。"""
+        """创建日志记录,字段正确。"""
         log = log_operation(
             user=self.user,
             module="account",
@@ -73,7 +73,7 @@ class OperationLogModelTest(TestCase):
             log.delete()
 
     def test_default_permissions(self):
-        """模型默认权限只有 add 和 view，没有 change 和 delete。"""
+        """模型默认权限只有 add 和 view,没有 change 和 delete。"""
         from django.contrib.auth.models import Permission
 
         perms = Permission.objects.filter(

@@ -5,7 +5,7 @@
 1. 解析 JWT 中的用户、门店及角色上下文。
 2. 验证用户当前是否仍拥有对应门店及角色。
 3. 加载当前角色有效的权限码集合。
-4. 将认证上下文挂载到 request，供权限类使用。
+4. 将认证上下文挂载到 request,供权限类使用。
 """
 
 from django.core.exceptions import MultipleObjectsReturned
@@ -66,10 +66,10 @@ class StoreJWTAuthentication(JWTAuthentication):
                 )
             )
         except UserStoreRole.DoesNotExist:
-            raise AuthenticationFailed("用户门店权限已失效，请重新登录")
+            raise AuthenticationFailed("用户门店权限已失效,请重新登录")
         except MultipleObjectsReturned:
             # 数据异常：同一用户、门店、角色存在重复关联
-            raise AuthenticationFailed("用户权限数据异常，请联系管理员")
+            raise AuthenticationFailed("用户权限数据异常,请联系管理员")
 
         # 6. 加载当前角色有效权限码
         perm_set = {

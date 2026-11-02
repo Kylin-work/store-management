@@ -1,5 +1,10 @@
 """账号管理视图。"""
 
+from core.codes import BizCode
+from core.exceptions import BizException
+from core.pagination import StandardPagination
+from core.permissions import HasPerm
+from core.responses import success
 from django.db import transaction
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
@@ -14,11 +19,6 @@ from apps.accounts.serializers.account import (
 )
 from apps.logs.services.logger import log_operation
 from apps.stores.models import Store
-from core.codes import BizCode
-from core.exceptions import BizException
-from core.pagination import StandardPagination
-from core.permissions import HasPerm
-from core.responses import success
 
 # ---------------------------------------------------------------------------
 # 权限类
@@ -49,10 +49,10 @@ class CanUpdateAccount(HasPerm):
 
 
 def _get_user(employee_code: str, *, for_update=False) -> User:
-    """按工号获取账号，不存在时抛出业务异常。
+    """按工号获取账号,不存在时抛出业务异常。
 
-    for_update=True 时加行锁，必须在事务内调用。
-    for_update=False 时预加载门店角色，供序列化使用。
+    for_update=True 时加行锁,必须在事务内调用。
+    for_update=False 时预加载门店角色,供序列化使用。
     """
     queryset = User.objects.all()
 
@@ -77,7 +77,7 @@ def _get_user(employee_code: str, *, for_update=False) -> User:
 
 
 def _get_account_queryset():
-    """获取预加载门店角色的账号查询集，供列表使用。"""
+    """获取预加载门店角色的账号查询集,供列表使用。"""
     return User.objects.prefetch_related(
         "store_roles__store",
         "store_roles__role",
@@ -85,9 +85,9 @@ def _get_account_queryset():
 
 
 def _validate_store_roles(data):
-    """校验门店角色数据，并返回门店角色列表及角色映射。
+    """校验门店角色数据,并返回门店角色列表及角色映射。
 
-    必须在事务内调用（使用了 select_for_update）。
+    必须在事务内调用(使用了 select_for_update)。
     """
     serializer = StoreRoleItemSerializer(
         data=data,
@@ -105,7 +105,7 @@ def _validate_store_roles(data):
             message="同一门店只能分配一个角色",
         )
 
-    # 校验门店（加行锁，防止校验后被删）
+    # 校验门店(加行锁,防止校验后被删)
     existing_store_ids = set(
         Store.objects.select_for_update()
         .filter(pk__in=store_ids, is_active=True)
@@ -120,7 +120,7 @@ def _validate_store_roles(data):
             message=f"门店不存在或已停用：{sorted(missing_store_ids)}",
         )
 
-    # 校验角色（加行锁，防止校验后被停用）
+    # 校验角色(加行锁,防止校验后被停用)
     role_codes = {item["role_code"] for item in store_roles}
 
     roles_by_code = {
@@ -158,7 +158,7 @@ class AccountListCreateView(APIView):
         return [IsAuthenticated(), permission_class()]
 
     def get(self, request):
-        """账号列表，分页。"""
+        """账号列表,分页。"""
         queryset = _get_account_queryset().order_by("employee_code", "pk")
 
         paginator = StandardPagination()
@@ -177,7 +177,7 @@ class AccountListCreateView(APIView):
 
     @transaction.atomic
     def post(self, request):
-        """创建账号，自动生成工号并分配门店角色。"""
+        """创建账号,自动生成工号并分配门店角色。"""
         serializer = AccountCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
@@ -202,7 +202,7 @@ class AccountListCreateView(APIView):
             },
         )
 
-        # 重新加载，带出门店角色
+        # 重新加载,带出门店角色
         user = _get_account_queryset().get(pk=user.pk)
 
         return success(
@@ -257,7 +257,7 @@ class AccountDetailView(APIView):
             },
         )
 
-        # 重新加载，带出门店角色
+        # 重新加载,带出门店角色
         user = _get_account_queryset().get(pk=user.pk)
 
         return success(data=AccountListSerializer(user).data)
@@ -364,7 +364,7 @@ class AccountStoreRolesView(APIView):
             },
         )
 
-        # 重新加载门店角色，避免使用旧的预取缓存
+        # 重新加载门店角色,避免使用旧的预取缓存
         user = _get_account_queryset().get(pk=user.pk)
 
         return success(data=AccountListSerializer(user).data)

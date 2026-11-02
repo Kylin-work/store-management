@@ -6,58 +6,179 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
-        ('stores', '0001_initial'),
+        ("stores", "0001_initial"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Member',
+            name="Member",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(db_comment='会员姓名', max_length=50, verbose_name='姓名')),
-                ('phone', models.CharField(db_comment='会员联系方式', max_length=20, verbose_name='手机号')),
-                ('balance', models.DecimalField(db_comment='储值余额', decimal_places=2, default=0, max_digits=12, verbose_name='余额')),
-                ('points', models.IntegerField(db_comment='会员积分', default=0, verbose_name='积分')),
-                ('level', models.CharField(choices=[('normal', '普通会员'), ('silver', '银卡会员'), ('gold', '金卡会员')], db_comment='会员等级', default='normal', max_length=20, verbose_name='等级')),
-                ('is_active', models.BooleanField(db_comment='停用后不可操作', default=True, verbose_name='是否启用')),
-                ('created_at', models.DateTimeField(auto_now_add=True, verbose_name='创建时间')),
-                ('updated_at', models.DateTimeField(auto_now=True, verbose_name='更新时间')),
-                ('store', models.ForeignKey(db_comment='所属门店', on_delete=django.db.models.deletion.PROTECT, related_name='members', to='stores.store', verbose_name='门店')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "name",
+                    models.CharField(
+                        db_comment="会员姓名", max_length=50, verbose_name="姓名"
+                    ),
+                ),
+                (
+                    "phone",
+                    models.CharField(
+                        db_comment="会员联系方式", max_length=20, verbose_name="手机号"
+                    ),
+                ),
+                (
+                    "balance",
+                    models.DecimalField(
+                        db_comment="储值余额",
+                        decimal_places=2,
+                        default=0,
+                        max_digits=12,
+                        verbose_name="余额",
+                    ),
+                ),
+                (
+                    "points",
+                    models.IntegerField(
+                        db_comment="会员积分", default=0, verbose_name="积分"
+                    ),
+                ),
+                (
+                    "level",
+                    models.CharField(
+                        choices=[
+                            ("normal", "普通会员"),
+                            ("silver", "银卡会员"),
+                            ("gold", "金卡会员"),
+                        ],
+                        db_comment="会员等级",
+                        default="normal",
+                        max_length=20,
+                        verbose_name="等级",
+                    ),
+                ),
+                (
+                    "is_active",
+                    models.BooleanField(
+                        db_comment="停用后不可操作",
+                        default=True,
+                        verbose_name="是否启用",
+                    ),
+                ),
+                (
+                    "created_at",
+                    models.DateTimeField(auto_now_add=True, verbose_name="创建时间"),
+                ),
+                (
+                    "updated_at",
+                    models.DateTimeField(auto_now=True, verbose_name="更新时间"),
+                ),
+                (
+                    "store",
+                    models.ForeignKey(
+                        db_comment="所属门店",
+                        on_delete=django.db.models.deletion.PROTECT,
+                        related_name="members",
+                        to="stores.store",
+                        verbose_name="门店",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': '会员',
-                'verbose_name_plural': '会员',
-                'db_table': 'members_member',
-                'db_table_comment': '会员表',
-                'ordering': ('-created_at',),
+                "verbose_name": "会员",
+                "verbose_name_plural": "会员",
+                "db_table": "members_member",
+                "db_table_comment": "会员表",
+                "ordering": ("-created_at",),
             },
         ),
         migrations.CreateModel(
-            name='RechargeRecord',
+            name="RechargeRecord",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('amount', models.DecimalField(db_comment='本次充值金额', decimal_places=2, max_digits=12, verbose_name='充值金额')),
-                ('balance_before', models.DecimalField(db_comment='充值前余额，用于对账', decimal_places=2, max_digits=12, verbose_name='充值前余额')),
-                ('balance_after', models.DecimalField(db_comment='充值后余额，用于对账', decimal_places=2, max_digits=12, verbose_name='充值后余额')),
-                ('created_at', models.DateTimeField(auto_now_add=True, verbose_name='充值时间')),
-                ('member', models.ForeignKey(db_comment='充值的会员', on_delete=django.db.models.deletion.PROTECT, related_name='recharge_records', to='members.member', verbose_name='会员')),
-                ('staff', models.ForeignKey(db_comment='经办店员', on_delete=django.db.models.deletion.PROTECT, related_name='recharge_records', to=settings.AUTH_USER_MODEL, verbose_name='操作人')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "amount",
+                    models.DecimalField(
+                        db_comment="本次充值金额",
+                        decimal_places=2,
+                        max_digits=12,
+                        verbose_name="充值金额",
+                    ),
+                ),
+                (
+                    "balance_before",
+                    models.DecimalField(
+                        db_comment="充值前余额,用于对账",
+                        decimal_places=2,
+                        max_digits=12,
+                        verbose_name="充值前余额",
+                    ),
+                ),
+                (
+                    "balance_after",
+                    models.DecimalField(
+                        db_comment="充值后余额,用于对账",
+                        decimal_places=2,
+                        max_digits=12,
+                        verbose_name="充值后余额",
+                    ),
+                ),
+                (
+                    "created_at",
+                    models.DateTimeField(auto_now_add=True, verbose_name="充值时间"),
+                ),
+                (
+                    "member",
+                    models.ForeignKey(
+                        db_comment="充值的会员",
+                        on_delete=django.db.models.deletion.PROTECT,
+                        related_name="recharge_records",
+                        to="members.member",
+                        verbose_name="会员",
+                    ),
+                ),
+                (
+                    "staff",
+                    models.ForeignKey(
+                        db_comment="经办店员",
+                        on_delete=django.db.models.deletion.PROTECT,
+                        related_name="recharge_records",
+                        to=settings.AUTH_USER_MODEL,
+                        verbose_name="操作人",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': '充值记录',
-                'verbose_name_plural': '充值记录',
-                'db_table': 'members_recharge_record',
-                'db_table_comment': '会员充值记录表',
-                'ordering': ('-created_at',),
+                "verbose_name": "充值记录",
+                "verbose_name_plural": "充值记录",
+                "db_table": "members_recharge_record",
+                "db_table_comment": "会员充值记录表",
+                "ordering": ("-created_at",),
             },
         ),
         migrations.AddConstraint(
-            model_name='member',
-            constraint=models.UniqueConstraint(fields=('store', 'phone'), name='uniq_store_member_phone'),
+            model_name="member",
+            constraint=models.UniqueConstraint(
+                fields=("store", "phone"), name="uniq_store_member_phone"
+            ),
         ),
     ]

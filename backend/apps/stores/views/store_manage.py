@@ -1,5 +1,9 @@
 """门店管理端视图。"""
 
+from core.codes import BizCode
+from core.exceptions import BizException
+from core.pagination import StandardPagination
+from core.responses import success
 from django.db import transaction
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
@@ -9,10 +13,6 @@ from apps.logs.services.logger import log_operation
 from apps.stores.models import Store
 from apps.stores.permissions.store import IsSuperUser
 from apps.stores.serializers.store_manage import StoreManageSerializer
-from core.codes import BizCode
-from core.exceptions import BizException
-from core.pagination import StandardPagination
-from core.responses import success
 
 
 class StoreManageBaseView(APIView):
@@ -22,7 +22,7 @@ class StoreManageBaseView(APIView):
 
     @staticmethod
     def get_store(pk, *, for_update=False):
-        """获取门店，不存在时抛出业务异常。"""
+        """获取门店,不存在时抛出业务异常。"""
         queryset = Store.objects.all()
 
         if for_update:
@@ -44,7 +44,7 @@ class StoreManageListCreateView(StoreManageBaseView):
     """门店列表与创建。"""
 
     def get(self, request):
-        """门店列表，分页。"""
+        """门店列表,分页。"""
         queryset = Store.objects.all().order_by("code", "pk")
 
         paginator = StandardPagination()

@@ -33,13 +33,13 @@ class RechargeRecord(models.Model):
         max_digits=12,
         decimal_places=2,
         verbose_name="充值前余额",
-        db_comment="充值前余额，用于对账",
+        db_comment="充值前余额,用于对账",
     )
     balance_after = models.DecimalField(
         max_digits=12,
         decimal_places=2,
         verbose_name="充值后余额",
-        db_comment="充值后余额，用于对账",
+        db_comment="充值后余额,用于对账",
     )
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="充值时间")
 

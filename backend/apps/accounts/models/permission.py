@@ -1,7 +1,7 @@
 """权限码模型。
 
 权限码由各业务模块在 apps.py 中声明,sync_permissions 命令同步到此表。
-管理员只能从已同步的权限码里给角色分配，不能自由创建。
+管理员只能从已同步的权限码里给角色分配,不能自由创建。
 """
 
 from django.db import models
@@ -14,7 +14,7 @@ class Permission(models.Model):
         max_length=100,
         unique=True,
         verbose_name="权限码",
-        db_comment="格式 模块:动作，如 member:recharge",
+        db_comment="格式 模块:动作,如 member:recharge",
     )
     name = models.CharField(
         max_length=50, verbose_name="权限名称", db_comment="权限对应中文名称"
