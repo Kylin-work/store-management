@@ -1,4 +1,4 @@
-"""菜单视图。"""
+"""菜单视图."""
 
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
@@ -9,7 +9,7 @@ from core.responses import success
 
 
 def _build_menu_tree(menus, perm_set, is_superuser):
-    """按权限过滤并组装菜单树。
+    """按权限过滤并组装菜单树.
 
     menus: 已按 sort 排序的全部启用菜单
     perm_set: 当前用户权限码集合,超级管理员传 None
@@ -23,7 +23,7 @@ def _build_menu_tree(menus, perm_set, is_superuser):
     def _filter_and_build(parent_id):
         result = []
         for menu in children_map.get(parent_id, []):
-            # 权限过滤：超级管理员全放行；无权限码的菜单放行；有权限码需在集合内
+            # 权限过滤：超级管理员全放行;无权限码的菜单放行;有权限码需在集合内
             if (
                 not is_superuser
                 and menu.permission_code
@@ -47,12 +47,12 @@ def _build_menu_tree(menus, perm_set, is_superuser):
 
 
 class MenuListView(APIView):
-    """当前用户可见菜单树。"""
+    """当前用户可见菜单树."""
 
     permission_classes = (IsAuthenticated,)
 
     def get(self, request):
-        """返回按权限过滤后的菜单树。"""
+        """返回按权限过滤后的菜单树."""
         menus = list(Menu.objects.filter(is_active=True).order_by("sort", "id"))
 
         if request.user.is_superuser:

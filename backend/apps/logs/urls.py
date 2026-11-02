@@ -1,4 +1,4 @@
-"""logs 路由。"""
+"""logs 路由."""
 
 from django.urls import path
 

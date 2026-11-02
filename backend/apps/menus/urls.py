@@ -1,4 +1,4 @@
-"""menus 路由。"""
+"""menus 路由."""
 
 from django.urls import path
 

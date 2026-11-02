@@ -1,4 +1,4 @@
-"""菜单接口测试。"""
+"""菜单接口测试."""
 
 from unittest.mock import patch
 
@@ -13,7 +13,7 @@ from apps.stores.models import Store
 
 
 class MenuTestBase(APITestCase):
-    """菜单测试基类。"""
+    """菜单测试基类."""
 
     def setUp(self):
         throttle_patcher = patch(
@@ -152,10 +152,10 @@ class MenuTestBase(APITestCase):
 
 
 class MenuSuccessTest(MenuTestBase):
-    """菜单接口成功场景。"""
+    """菜单接口成功场景."""
 
     def test_superuser_sees_all_active_menus(self):
-        """超级管理员看到全部启用菜单(含无权限码的),停用的不出现。"""
+        """超级管理员看到全部启用菜单(含无权限码的),停用的不出现."""
         self._auth_superuser()
         data = self._get_menus()
 
@@ -167,7 +167,7 @@ class MenuSuccessTest(MenuTestBase):
         self.assertNotIn("disabled_menu", codes)
 
     def test_manager_sees_menus_by_permissions(self):
-        """店长只看到有权限的菜单 + 无权限码的菜单。"""
+        """店长只看到有权限的菜单 + 无权限码的菜单."""
         self._auth_manager()
         data = self._get_menus()
 
@@ -179,7 +179,7 @@ class MenuSuccessTest(MenuTestBase):
         self.assertNotIn("disabled_menu", codes)
 
     def test_staff_sees_only_public_menus(self):
-        """无权限用户只看到无权限码的菜单。"""
+        """无权限用户只看到无权限码的菜单."""
         self._auth_staff()
         data = self._get_menus()
 
@@ -190,7 +190,7 @@ class MenuSuccessTest(MenuTestBase):
         self.assertNotIn("dashboard_view", codes)
 
     def test_menu_sorted_by_sort(self):
-        """菜单按 sort 升序返回。"""
+        """菜单按 sort 升序返回."""
         self._auth_superuser()
         data = self._get_menus()
 
@@ -199,10 +199,10 @@ class MenuSuccessTest(MenuTestBase):
 
 
 class MenuFailTest(MenuTestBase):
-    """菜单接口失败场景。"""
+    """菜单接口失败场景."""
 
     def test_anonymous_cannot_access(self):
-        """未登录返回 401。"""
+        """未登录返回 401."""
         response = self.client.get(self.url)
         self.assertEqual(
             response.status_code,
@@ -211,10 +211,10 @@ class MenuFailTest(MenuTestBase):
 
 
 class MenuPermissionChangeTest(MenuTestBase):
-    """权限变更后菜单实时变化。"""
+    """权限变更后菜单实时变化."""
 
     def test_remove_permission_hides_menu(self):
-        """摘掉权限码后,对应菜单立即消失。"""
+        """摘掉权限码后,对应菜单立即消失."""
         self._auth_manager()
         data = self._get_menus()
         self.assertIn("member_manage", self._menu_codes(data))
@@ -226,7 +226,7 @@ class MenuPermissionChangeTest(MenuTestBase):
         self.assertNotIn("member_manage", self._menu_codes(data))
 
     def test_add_permission_shows_menu(self):
-        """分配权限码后,对应菜单立即出现。"""
+        """分配权限码后,对应菜单立即出现."""
         self._auth_manager()
         data = self._get_menus()
         self.assertNotIn("dashboard_view", self._menu_codes(data))

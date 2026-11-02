@@ -1,4 +1,4 @@
-"""充值记录模型。"""
+"""充值记录模型."""
 
 from django.conf import settings
 from django.db import models
@@ -7,7 +7,7 @@ from apps.members.models.member import Member
 
 
 class RechargeRecord(models.Model):
-    """会员充值记录。"""
+    """会员充值记录."""
 
     member = models.ForeignKey(
         Member,

@@ -1,8 +1,8 @@
 """
-门店管理端序列化器。
+门店管理端序列化器.
 
-提供门店新增、编辑及详情数据序列化。
-包含门店编码、名称唯一性校验。
+提供门店新增、编辑及详情数据序列化.
+包含门店编码、名称唯一性校验.
 """
 
 from rest_framework import serializers
@@ -11,7 +11,7 @@ from apps.stores.models import Store
 
 
 class StoreManageSerializer(serializers.ModelSerializer):
-    """门店管理端序列化器。"""
+    """门店管理端序列化器."""
 
     store_type_display = serializers.CharField(
         source="get_store_type_display",
@@ -56,7 +56,7 @@ class StoreManageSerializer(serializers.ModelSerializer):
         }
 
     def validate_code(self, value):
-        """门店编码唯一性校验,统一转大写。"""
+        """门店编码唯一性校验,统一转大写."""
 
         value = value.strip().upper()
 
@@ -72,7 +72,7 @@ class StoreManageSerializer(serializers.ModelSerializer):
         return value
 
     def validate_name(self, value):
-        """门店名称唯一性校验。"""
+        """门店名称唯一性校验."""
 
         value = value.strip()
 

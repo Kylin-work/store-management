@@ -1,4 +1,4 @@
-"""用户门店角色模型。
+"""用户门店角色模型.
 
 表达"谁、在哪个门店、是什么角色".
 同一个用户在不同门店可以有不同角色,但同一门店只能有一个角色.
@@ -11,7 +11,7 @@ from apps.accounts.models.user import User
 
 
 class UserStoreRole(models.Model):
-    """用户在某门店的角色。"""
+    """用户在某门店的角色."""
 
     user = models.ForeignKey(
         User,

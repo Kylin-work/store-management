@@ -1,4 +1,4 @@
-"""角色模型。
+"""角色模型.
 
 角色不写死,管理员可在后台添加(如区域经理、财务).
 角色与权限码通过 M2M 关联,权限映射存数据库.
@@ -11,7 +11,7 @@ from apps.accounts.models.permission import Permission
 
 
 class Role(models.Model):
-    """系统角色。一个角色拥有一组权限码。"""
+    """系统角色.一个角色拥有一组权限码."""
 
     name = models.CharField(
         max_length=50, unique=True, verbose_name="角色名称", db_comment="如店长、店员"

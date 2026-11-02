@@ -1,4 +1,4 @@
-"""menus 模型导出。"""
+"""menus 模型导出."""
 
 from apps.menus.models.menu import Menu
 

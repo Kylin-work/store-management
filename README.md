@@ -7,9 +7,9 @@
 
 ## 一、项目定位
 
-从零开发一个**多门店会员管理系统**,作为 Web 后端求职项目。核心卖点是**按门店分角色的权限设计**：同一个用户在不同门店可以有不同角色,登录时选择门店,后续所有操作受该门店角色约束。
+从零开发一个**多门店会员管理系统**,作为 Web 后端求职项目.核心卖点是**按门店分角色的权限设计**：同一个用户在不同门店可以有不同角色,登录时选择门店,后续所有操作受该门店角色约束.
 
-前后端分离,monorepo 开发、分离部署。
+前后端分离,monorepo 开发、分离部署.
 
 ## 二、技术栈
 
@@ -22,15 +22,15 @@
 | Python 包管理 | uv(`pyproject.toml` + `uv.lock`) |
 | 前端 | Vue 3 + TypeScript + Vite + Element Plus + Pinia |
 | 操作系统 | Ubuntu |
-| 部署 | Docker Compose(Django + MySQL + Redis)；开发阶段用本地 MySQL 和 Redis |
+| 部署 | Docker Compose(Django + MySQL + Redis);开发阶段用本地 MySQL 和 Redis |
 
-**版本约束**：Django `>=5.2,<5.3`,DRF `>=3.16,<4`,Python `>=3.12`。
+**版本约束**：Django `>=5.2,<5.3`,DRF `>=3.16,<4`,Python `>=3.12`.
 
 ## 三、数据模型
 
 ### 3.1 用户表(User,替换 Django 默认 User)
 
-用 `AbstractUser` 替换默认模型,去掉 `username`。
+用 `AbstractUser` 替换默认模型,去掉 `username`.
 
 | 字段 | 类型 | 说明 |
 |---|---|---|
@@ -52,7 +52,7 @@
 - 规则：纯数字,8 位,全局自增,如 `00000001`
 - 实现：独立序列表 `Sequence(name, current_value)`,`save()` 时在事务内 `select_for_update()` 锁定、加一、格式化
 - 与用户创建在同一事务中完成,任一环节失败整体回滚,给管理员返回明确错误让其重试
-- 不静默重试；离职用户 `is_active=False` 不删除,工号不产生空洞
+- 不静默重试;离职用户 `is_active=False` 不删除,工号不产生空洞
 
 ### 3.3 门店表(Store)
 
@@ -65,7 +65,7 @@
 
 ### 3.4 角色表(Role)
 
-角色不写死,可后期添加。
+角色不写死,可后期添加.
 
 | 字段 | 类型 | 说明 |
 |---|---|---|
@@ -81,7 +81,7 @@
 
 ### 3.5 用户门店角色表(UserStoreRole)
 
-三列关联,表达“谁、在哪个门店、是什么角色”。
+三列关联,表达“谁、在哪个门店、是什么角色”.
 
 | 字段 | 类型 | 说明 |
 |---|---|---|
@@ -89,7 +89,7 @@
 | store | FK → Store | |
 | role | FK → Role | |
 
-**唯一约束**：`(user, store)` —— 一个用户在一个门店只有一个角色。多角色可作为后续扩展点(放宽到 `(user, store, role)` 并做权限并集)。
+**唯一约束**：`(user, store)` —— 一个用户在一个门店只有一个角色.多角色可作为后续扩展点(放宽到 `(user, store, role)` 并做权限并集).
 
 ### 3.6 业务表
 
@@ -97,33 +97,33 @@
 - **Product**：`store` FK、`name`、`price`、`cost`(店员不可见)、`stock`
 - **Transaction**：`store` FK、`member` FK、`staff` FK、`product` FK、`quantity`、`total_amount`、`created_at`
 
-所有业务表都带 `store` 外键,是数据隔离的物理基础。
+所有业务表都带 `store` 外键,是数据隔离的物理基础.
 
 ## 四、权限设计
 
 ### 4.1 权限码
 
-格式 `模块:动作`,如 `member:list`、`member:recharge`、`product:edit_cost`、`transaction:refund`、`dashboard:view`。
+格式 `模块:动作`,如 `member:list`、`member:recharge`、`product:edit_cost`、`transaction:refund`、`dashboard:view`.
 
-集中在 `core/permissions.py` 定义,代码引用常量,不写字符串魔法值。菜单可见性、接口权限、前端按钮判断共用同一套权限码。
+集中在 `core/permissions.py` 定义,代码引用常量,不写字符串魔法值.菜单可见性、接口权限、前端按钮判断共用同一套权限码.
 
 ### 4.2 登录流程
 
 **接口一：门店列表(不需要登录)**
 
-`GET /api/stores/` 返回所有 `is_active=True` 的门店 ID 和名称。公开信息,不需要认证。
+`GET /api/stores/` 返回所有 `is_active=True` 的门店 ID 和名称.公开信息,不需要认证.
 
 **接口二：登录**
 
-`POST /api/auth/login/`,接收 `employee_code`、`password`、`store_id`。
+`POST /api/auth/login/`,接收 `employee_code`、`password`、`store_id`.
 
 后端校验：
-1. 工号 + 密码是否正确。
-2. 该用户是否在 `UserStoreRole` 中关联了所选门店。
+1. 工号 + 密码是否正确.
+2. 该用户是否在 `UserStoreRole` 中关联了所选门店.
 
-校验通过后签发 JWT,payload 包含 `user_id`、`store_id`、`role_code`。后续请求从 token 读门店和角色,**不接受客户端在请求参数中指定门店**。
+校验通过后签发 JWT,payload 包含 `user_id`、`store_id`、`role_code`.后续请求从 token 读门店和角色,**不接受客户端在请求参数中指定门店**.
 
-平台管理员(`is_superuser=True`)登录时不需要选择门店,token 中 `store_id` 为空,权限校验跳过门店隔离。
+平台管理员(`is_superuser=True`)登录时不需要选择门店,token 中 `store_id` 为空,权限校验跳过门店隔离.
 
 ### 4.3 四道校验
 
@@ -131,10 +131,10 @@
 |---|---|---|
 | 数据隔离 | ViewSet 的 `get_queryset` | 非管理员强制 `filter(store_id=token.store_id)` |
 | 接口级权限 | 自定义 `BasePermission.has_permission` | 根据 `role_code` 对应角色的 `permissions` 判断能否调用接口 |
-| 对象级权限 | `has_object_permission` | 店员只能操作自己经手的交易；店长只能操作本店数据 |
+| 对象级权限 | `has_object_permission` | 店员只能操作自己经手的交易;店长只能操作本店数据 |
 | 字段级可见性 | 序列化器 `__init__` 动态移除字段 | `cost` 对店员隐藏 |
 
-**关键原则**：列表接口不触发对象级权限,数据隔离必须靠 `get_queryset` 兜底。
+**关键原则**：列表接口不触发对象级权限,数据隔离必须靠 `get_queryset` 兜底.
 
 ## 五、统一响应规范
 
@@ -142,7 +142,7 @@
 
 **错误**：`{ "code": 10001, "message": "无权操作", "data": null }`
 
-列表 `data` 为 `{ "items": [...], "total": n, "page": 1, "page_size": 20 }`。
+列表 `data` 为 `{ "items": [...], "total": n, "page": 1, "page_size": 20 }`.
 
 **实现**：
 - `core/responses.py` 提供 `success()` / `error()` 辅助函数
@@ -169,7 +169,7 @@
 
 ## 七、后端目录结构
 
-按业务域分包,包内按职责分目录。`core/` 为横切基础设施包。
+按业务域分包,包内按职责分目录.`core/` 为横切基础设施包.
 
 ```
 backend/
@@ -213,8 +213,8 @@ backend/
 - Vue 3 + TypeScript + Vite + Element Plus + Pinia
 - 接口契约以 DRF 序列化器为准,开启 schema 生成(`/api/schema/`),前端对照写 TS 类型
 - 为 `UserProfile`(含 `role`、`storeId`)、菜单项(含 `permissionCode`)定义 TS 接口类型
-- 认证流程：SimpleJWT 签发 access + refresh；axios 拦截器附加 `Authorization: Bearer`；Vue Router 守卫校验 token 和角色；后端 DRF 权限类做最终兜底,前端不承担安全职责
-- 前端 `baseURL` 从环境变量读取；开发期配置 CORS
+- 认证流程：SimpleJWT 签发 access + refresh;axios 拦截器附加 `Authorization: Bearer`;Vue Router 守卫校验 token 和角色;后端 DRF 权限类做最终兜底,前端不承担安全职责
+- 前端 `baseURL` 从环境变量读取;开发期配置 CORS
 - 登录页流程：选门店(公开接口)→ 输工号和密码 → 登录
 
 ## 九、模块划分与推进顺序
@@ -225,13 +225,13 @@ backend/
 
 **支撑层**：操作日志(模型层禁止 update/delete)→ 测试(门店隔离、字段隐藏、角色越权)→ 部署文档
 
-**第一条验证链路**：`members` 模块跑通“店长能看本店会员、店员只能看自己经手的会员”。
+**第一条验证链路**：`members` 模块跑通“店长能看本店会员、店员只能看自己经手的会员”.
 
 ## 十、操作日志
 
-记录敏感操作(会员充值、商品改价、退款),字段包括操作人、门店、对象、动作、时间。
+记录敏感操作(会员充值、商品改价、退款),字段包括操作人、门店、对象、动作、时间.
 
-**模型层禁止 update/delete**,审计日志不可篡改。
+**模型层禁止 update/delete**,审计日志不可篡改.
 
 ## 十一、仓库与部署
 
@@ -243,4 +243,4 @@ backend/
 
 ---
 
-以上为定稿文档,所有设计决策均已确认。下一步进入开发,建议从 `stores` 模块的 `Store` 模型开始,再到 `accounts` 模块的 `Sequence`、`User`、`Role`、`UserStoreRole` 模型,然后是认证登录接口。
+以上为定稿文档,所有设计决策均已确认.下一步进入开发,建议从 `stores` 模块的 `Store` 模型开始,再到 `accounts` 模块的 `Sequence`、`User`、`Role`、`UserStoreRole` 模型,然后是认证登录接口.

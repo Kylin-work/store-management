@@ -1,4 +1,4 @@
-"""me 接口测试。"""
+"""me 接口测试."""
 
 from unittest.mock import patch
 
@@ -12,13 +12,13 @@ from apps.stores.models import Store
 
 
 class MeTestBase(APITestCase):
-    """me 接口测试基类。"""
+    """me 接口测试基类."""
 
     password = "Test@123456"
     admin_password = "Admin@123456"
 
     def setUp(self):
-        # 禁用 ScopedRateThrottle,避免限流影响测试。
+        # 禁用 ScopedRateThrottle,避免限流影响测试.
         throttle_patcher = patch(
             "rest_framework.throttling.ScopedRateThrottle.get_rate",
             return_value=None,
@@ -83,7 +83,7 @@ class MeTestBase(APITestCase):
         )
 
     def _make_token(self, user, store_id=None, role_code=None):
-        """直接签发访问令牌,绕过登录接口。"""
+        """直接签发访问令牌,绕过登录接口."""
         refresh = RefreshToken.for_user(user)
         refresh["store_id"] = store_id
         refresh["role_code"] = role_code
@@ -91,13 +91,13 @@ class MeTestBase(APITestCase):
         return str(refresh.access_token)
 
     def _authenticate(self, token):
-        """设置 Bearer 认证头。"""
+        """设置 Bearer 认证头."""
         self.client.credentials(
             HTTP_AUTHORIZATION=f"Bearer {token}",
         )
 
     def _normal_token(self):
-        """生成普通用户访问令牌。"""
+        """生成普通用户访问令牌."""
         return self._make_token(
             user=self.user,
             store_id=self.store.pk,
@@ -105,7 +105,7 @@ class MeTestBase(APITestCase):
         )
 
     def _admin_token(self):
-        """生成超级管理员访问令牌。"""
+        """生成超级管理员访问令牌."""
         return self._make_token(user=self.admin)
 
     def _get_me(self):
@@ -130,10 +130,10 @@ class MeTestBase(APITestCase):
 
 
 class MeSuccessTest(MeTestBase):
-    """me 接口成功场景。"""
+    """me 接口成功场景."""
 
     def test_normal_user_me(self):
-        """普通用户返回用户信息、门店上下文和有效权限码。"""
+        """普通用户返回用户信息、门店上下文和有效权限码."""
         self._authenticate(self._normal_token())
 
         response = self._get_me()
@@ -149,7 +149,7 @@ class MeSuccessTest(MeTestBase):
         self.assertEqual(data["context"]["store_id"], self.store.pk)
         self.assertEqual(data["context"]["role_code"], self.role.code)
 
-        # 仅返回启用的权限码,并保持稳定排序。
+        # 仅返回启用的权限码,并保持稳定排序.
         self.assertEqual(
             data["permissions"],
             ["account:create", "account:list"],
@@ -160,7 +160,7 @@ class MeSuccessTest(MeTestBase):
         )
 
     def test_superuser_me(self):
-        """超级管理员的 permissions 为 None,表示拥有全部权限。"""
+        """超级管理员的 permissions 为 None,表示拥有全部权限."""
         self._authenticate(self._admin_token())
 
         response = self._get_me()
@@ -173,22 +173,22 @@ class MeSuccessTest(MeTestBase):
 
 
 class MeFailTest(MeTestBase):
-    """me 接口失败场景。"""
+    """me 接口失败场景."""
 
     def test_anonymous_cannot_access(self):
-        """未认证用户不能访问。"""
+        """未认证用户不能访问."""
         response = self._get_me()
         self.assert_unauthorized(response)
 
     def test_invalid_token(self):
-        """无效 JWT 不能访问。"""
+        """无效 JWT 不能访问."""
         self._authenticate("invalid.token.here")
 
         response = self._get_me()
         self.assert_unauthorized(response)
 
     def test_store_role_removed(self):
-        """用户门店角色关系被删除后,旧 token 失效。"""
+        """用户门店角色关系被删除后,旧 token 失效."""
         token = self._normal_token()
         self.user_store_role.delete()
 
@@ -198,7 +198,7 @@ class MeFailTest(MeTestBase):
         self.assert_unauthorized(response)
 
     def test_store_disabled(self):
-        """门店停用后,旧 token 失效。"""
+        """门店停用后,旧 token 失效."""
         token = self._normal_token()
 
         self.store.is_active = False
@@ -210,7 +210,7 @@ class MeFailTest(MeTestBase):
         self.assert_unauthorized(response)
 
     def test_role_disabled(self):
-        """角色停用后,旧 token 失效。"""
+        """角色停用后,旧 token 失效."""
         token = self._normal_token()
 
         self.role.is_active = False
@@ -222,7 +222,7 @@ class MeFailTest(MeTestBase):
         self.assert_unauthorized(response)
 
     def test_user_disabled(self):
-        """用户停用后,旧 token 失效。"""
+        """用户停用后,旧 token 失效."""
         token = self._normal_token()
 
         self.user.is_active = False

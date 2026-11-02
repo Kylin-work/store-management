@@ -1,4 +1,4 @@
-"""自定义用户模型。
+"""自定义用户模型.
 
 - 去掉 username,用 employee_code(8 位纯数字,自动生成)登录
 - phone 作为联系方式,唯一但不参与认证
@@ -16,10 +16,10 @@ from apps.accounts.models.sequence import Sequence
 
 
 class CustomUserManager(UserManager):
-    """自定义管理器：去掉 username 依赖,适配 employee_code 为登录字段。"""
+    """自定义管理器：去掉 username 依赖,适配 employee_code 为登录字段."""
 
     def create_user(self, employee_code=None, password=None, **extra_fields):
-        """employee_code 为 None 时由 save() 自动生成。"""
+        """employee_code 为 None 时由 save() 自动生成."""
         extra_fields.setdefault("is_staff", False)
         extra_fields.setdefault("is_superuser", False)
         user = self.model(employee_code=employee_code, **extra_fields)
@@ -38,7 +38,7 @@ class CustomUserManager(UserManager):
 
 
 class User(AbstractUser):
-    """系统用户:登录凭证为工号,平台管理员用 is_superuser 区分。"""
+    """系统用户:登录凭证为工号,平台管理员用 is_superuser 区分."""
 
     username = None
     employee_code = models.CharField(
@@ -64,10 +64,10 @@ class User(AbstractUser):
         return f"{self.employee_code} {self.real_name}"
 
     def save(self, *args, **kwargs):
-        """创建时自动生成工号。
+        """创建时自动生成工号.
 
-        序列行由 data migration 预置,此处直接锁定、加一、格式化为 8 位。
-        与 User 创建同一事务,任一环节失败整体回滚。
+        序列行由 data migration 预置,此处直接锁定、加一、格式化为 8 位.
+        与 User 创建同一事务,任一环节失败整体回滚.
         """
         if not self.employee_code:
             with transaction.atomic():

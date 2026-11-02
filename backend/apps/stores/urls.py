@@ -1,4 +1,4 @@
-"""stores 路由。"""
+"""stores 路由."""
 
 from django.urls import path
 

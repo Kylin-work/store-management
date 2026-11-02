@@ -1,4 +1,4 @@
-"""操作日志查询接口测试。"""
+"""操作日志查询接口测试."""
 
 from datetime import timedelta
 from unittest.mock import patch
@@ -15,7 +15,7 @@ from apps.stores.models import Store
 
 
 class OperationLogTestBase(APITestCase):
-    """操作日志查询测试基类。"""
+    """操作日志查询测试基类."""
 
     def setUp(self):
         throttle_patcher = patch(
@@ -106,29 +106,29 @@ class OperationLogTestBase(APITestCase):
 
 
 class OperationLogPermissionTest(OperationLogTestBase):
-    """查询权限测试。"""
+    """查询权限测试."""
 
     def test_anonymous_cannot_access(self):
-        """未登录返回 401。"""
+        """未登录返回 401."""
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_staff_cannot_access(self):
-        """普通用户返回 403。"""
+        """普通用户返回 403."""
         self._auth_staff()
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         self.assertEqual(response.data["code"], 10002)
 
     def test_superuser_can_access(self):
-        """超级管理员可查。"""
+        """超级管理员可查."""
         self._auth_superuser()
         data = self._get_logs()
         self.assertEqual(data["total"], 3)
 
 
 class OperationLogFilterTest(OperationLogTestBase):
-    """筛选测试。"""
+    """筛选测试."""
 
     def setUp(self):
         super().setUp()
@@ -149,36 +149,36 @@ class OperationLogFilterTest(OperationLogTestBase):
         self.assertEqual(data["items"][0]["module"], "role")
 
     def test_filter_by_start_time(self):
-        """start_time 过滤。"""
+        """start_time 过滤."""
         future = (timezone.now() + timedelta(hours=1)).isoformat()
         data = self._get_logs({"start_time": future})
         self.assertEqual(data["total"], 0)
 
     def test_filter_by_end_time(self):
-        """end_time 过滤。"""
+        """end_time 过滤."""
         past = (timezone.now() - timedelta(hours=1)).isoformat()
         data = self._get_logs({"end_time": past})
         self.assertEqual(data["total"], 0)
 
     def test_invalid_start_time(self):
-        """非法时间格式返回 10001。"""
+        """非法时间格式返回 10001."""
         response = self.client.get(self.url, {"start_time": "invalid"})
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(response.data["code"], 10001)
 
 
 class OperationLogOrderTest(OperationLogTestBase):
-    """排序和字段测试。"""
+    """排序和字段测试."""
 
     def test_ordered_by_created_at_desc(self):
-        """按创建时间倒序。"""
+        """按创建时间倒序."""
         self._auth_superuser()
         data = self._get_logs()
         ids = [item["id"] for item in data["items"]]
         self.assertEqual(ids, sorted(ids, reverse=True))
 
     def test_user_info_included(self):
-        """返回操作人工号和姓名。"""
+        """返回操作人工号和姓名."""
         self._auth_superuser()
         data = self._get_logs({"module": "store"})
         item = data["items"][0]

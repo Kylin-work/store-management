@@ -1,4 +1,4 @@
-"""members 路由。"""
+"""members 路由."""
 
 from django.urls import path
 

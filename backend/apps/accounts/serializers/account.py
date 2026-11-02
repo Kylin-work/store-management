@@ -1,4 +1,4 @@
-"""账号管理序列化器。"""
+"""账号管理序列化器."""
 
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
@@ -9,7 +9,7 @@ from apps.stores.models import Store
 
 
 class StoreRoleItemSerializer(serializers.Serializer):
-    """创建账号时的门店角色项。"""
+    """创建账号时的门店角色项."""
 
     store_id = serializers.IntegerField(min_value=1, label="门店ID")
     role_code = serializers.CharField(
@@ -21,7 +21,7 @@ class StoreRoleItemSerializer(serializers.Serializer):
 
 
 class AccountListSerializer(serializers.ModelSerializer):
-    """账号列表序列化器。"""
+    """账号列表序列化器."""
 
     store_roles = serializers.SerializerMethodField(label="门店角色")
 
@@ -39,7 +39,7 @@ class AccountListSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
     def get_store_roles(self, obj):
-        """返回账号的全部门店角色。"""
+        """返回账号的全部门店角色."""
         return [
             {
                 "store_id": item.store_id,
@@ -52,7 +52,7 @@ class AccountListSerializer(serializers.ModelSerializer):
 
 
 class AccountCreateSerializer(serializers.Serializer):
-    """创建账号序列化器。"""
+    """创建账号序列化器."""
 
     phone = serializers.CharField(
         max_length=11,
@@ -78,13 +78,13 @@ class AccountCreateSerializer(serializers.Serializer):
     )
 
     def validate_phone(self, value):
-        """手机号唯一性校验。"""
+        """手机号唯一性校验."""
         if User.objects.filter(phone=value).exists():
             raise serializers.ValidationError("手机号已存在")
         return value
 
     def validate_password(self, value):
-        """校验初始密码。"""
+        """校验初始密码."""
         try:
             validate_password(value)
         except DjangoValidationError as exc:
@@ -92,7 +92,7 @@ class AccountCreateSerializer(serializers.Serializer):
         return value
 
     def validate_store_roles(self, value):
-        """校验门店和角色是否有效,以及门店是否重复。"""
+        """校验门店和角色是否有效,以及门店是否重复."""
         if not value:
             raise serializers.ValidationError("至少分配一个门店角色")
 
@@ -134,7 +134,7 @@ class AccountCreateSerializer(serializers.Serializer):
         return value
 
     def create(self, validated_data):
-        """创建账号并分配门店角色。"""
+        """创建账号并分配门店角色."""
         store_roles = validated_data.pop("store_roles")
         password = validated_data.pop("password")
 
@@ -159,7 +159,7 @@ class AccountCreateSerializer(serializers.Serializer):
 
 
 class AccountUpdateSerializer(serializers.Serializer):
-    """编辑账号序列化器。"""
+    """编辑账号序列化器."""
 
     phone = serializers.CharField(
         max_length=11,
@@ -183,7 +183,7 @@ class AccountUpdateSerializer(serializers.Serializer):
     )
 
     def validate_phone(self, value):
-        """手机号唯一性校验,排除当前账号。"""
+        """手机号唯一性校验,排除当前账号."""
         queryset = User.objects.filter(phone=value)
 
         if self.instance:
@@ -195,7 +195,7 @@ class AccountUpdateSerializer(serializers.Serializer):
         return value
 
     def validate_password(self, value):
-        """校验新密码。"""
+        """校验新密码."""
         try:
             validate_password(value, user=self.instance)
         except DjangoValidationError as exc:
@@ -204,7 +204,7 @@ class AccountUpdateSerializer(serializers.Serializer):
         return value
 
     def update(self, instance, validated_data):
-        """更新账号信息。"""
+        """更新账号信息."""
         update_fields = []
 
         password = validated_data.pop("password", None)

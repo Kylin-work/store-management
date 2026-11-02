@@ -1,4 +1,4 @@
-"""操作日志查询视图。"""
+"""操作日志查询视图."""
 
 from datetime import datetime
 
@@ -15,7 +15,7 @@ from core.responses import success
 
 
 def _parse_datetime(value: str, field_name: str) -> datetime:
-    """解析 ISO 8601 时间字符串,失败时抛业务异常。"""
+    """解析 ISO 8601 时间字符串,失败时抛业务异常."""
     try:
         return datetime.fromisoformat(value)
     except (ValueError, TypeError) as exc:
@@ -26,12 +26,12 @@ def _parse_datetime(value: str, field_name: str) -> datetime:
 
 
 class OperationLogListView(APIView):
-    """操作日志列表,平台管理员专属。"""
+    """操作日志列表,平台管理员专属."""
 
     permission_classes = (IsAuthenticated, IsSuperUser)
 
     def get(self, request):
-        """查询操作日志,支持按模块、动作、操作人、时间范围筛选。"""
+        """查询操作日志,支持按模块、动作、操作人、时间范围筛选."""
         queryset = OperationLog.objects.select_related("user", "store").order_by(
             "-created_at"
         )

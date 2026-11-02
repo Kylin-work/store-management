@@ -1,4 +1,4 @@
-"""门店管理端视图。"""
+"""门店管理端视图."""
 
 from django.db import transaction
 from rest_framework import status
@@ -16,13 +16,13 @@ from core.responses import success
 
 
 class StoreManageBaseView(APIView):
-    """门店管理基础视图。"""
+    """门店管理基础视图."""
 
     permission_classes = (IsAuthenticated, IsSuperUser)
 
     @staticmethod
     def get_store(pk, *, for_update=False):
-        """获取门店,不存在时抛出业务异常。"""
+        """获取门店,不存在时抛出业务异常."""
         queryset = Store.objects.all()
 
         if for_update:
@@ -41,10 +41,10 @@ class StoreManageBaseView(APIView):
 
 
 class StoreManageListCreateView(StoreManageBaseView):
-    """门店列表与创建。"""
+    """门店列表与创建."""
 
     def get(self, request):
-        """门店列表,分页。"""
+        """门店列表,分页."""
         queryset = Store.objects.all().order_by("code", "pk")
 
         paginator = StandardPagination()
@@ -63,7 +63,7 @@ class StoreManageListCreateView(StoreManageBaseView):
 
     @transaction.atomic
     def post(self, request):
-        """创建门店。"""
+        """创建门店."""
         serializer = StoreManageSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         store = serializer.save()
@@ -82,16 +82,16 @@ class StoreManageListCreateView(StoreManageBaseView):
 
 
 class StoreManageDetailView(StoreManageBaseView):
-    """门店详情与编辑。"""
+    """门店详情与编辑."""
 
     def get(self, request, pk):
-        """门店详情。"""
+        """门店详情."""
         store = self.get_store(pk)
         return success(data=StoreManageSerializer(store).data)
 
     @transaction.atomic
     def put(self, request, pk):
-        """全量编辑门店。"""
+        """全量编辑门店."""
         store = self.get_store(pk, for_update=True)
 
         serializer = StoreManageSerializer(
@@ -112,7 +112,7 @@ class StoreManageDetailView(StoreManageBaseView):
 
     @transaction.atomic
     def patch(self, request, pk):
-        """部分编辑门店。"""
+        """部分编辑门店."""
         store = self.get_store(pk, for_update=True)
 
         serializer = StoreManageSerializer(
@@ -134,11 +134,11 @@ class StoreManageDetailView(StoreManageBaseView):
 
 
 class StoreManageStatusView(StoreManageBaseView):
-    """门店启用/停用。"""
+    """门店启用/停用."""
 
     @transaction.atomic
     def patch(self, request, pk):
-        """切换门店启用状态。"""
+        """切换门店启用状态."""
         store = self.get_store(pk, for_update=True)
 
         is_active = request.data.get("is_active")

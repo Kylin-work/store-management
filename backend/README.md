@@ -1,6 +1,6 @@
 # 门店会员管理系统
 
-多门店会员管理后端系统,支持按门店分角色的权限体系、门店/账号/角色管理、菜单权限、操作审计。
+多门店会员管理后端系统,支持按门店分角色的权限体系、门店/账号/角色管理、菜单权限、操作审计.
 
 ## 技术栈
 
@@ -14,12 +14,12 @@
 
 ## 权限设计
 
-系统的核心是按门店分角色的权限模型。
+系统的核心是按门店分角色的权限模型.
 
 ### 角色与门店
 
-一个用户在系统里只有一个账号(工号 + 密码),但在不同门店可以有不同角色。
-例如张三在 A 店是店长、在 B 店是店员,登录时选择门店,本次会话的权限由该门店下的角色决定。
+一个用户在系统里只有一个账号(工号 + 密码),但在不同门店可以有不同角色.
+例如张三在 A 店是店长、在 B 店是店员,登录时选择门店,本次会话的权限由该门店下的角色决定.
 
 三张表表达这个关系：
 
@@ -29,7 +29,7 @@
 
 ### 权限码
 
-权限码格式 模块:动作,如 member:recharge、product:edit_cost。
+权限码格式 模块:动作,如 member:recharge、product:edit_cost.
 
 - 权限码由各业务模块在 apps.py 里声明,sync_permissions 命令同步到 Permission 表
 - 角色和权限码通过 M2M 关联,管理员可在后台分配
@@ -52,7 +52,7 @@
 4. 后续请求由 StoreJWTAuthentication 校验 token 里的门店角色是否仍有效,加载权限码集合挂到 request.perm_set
 5. 权限变更后,旧 token 立即失效,不需要等过期
 
-平台管理员(is_superuser)不绑定门店,登录时门店 ID 可为空,权限全放行。
+平台管理员(is_superuser)不绑定门店,登录时门店 ID 可为空,权限全放行.
 
 ## 项目结构
 
@@ -75,7 +75,7 @@ store-management/
 │   └── manage.py
 └── README.md
 
-每个业务包内按职责分目录：models/、serializers/、views/、permissions/、tests/。permissions/ 与 views/ 同级,权限是一等公民。
+每个业务包内按职责分目录：models/、serializers/、views/、permissions/、tests/.permissions/ 与 views/ 同级,权限是一等公民.
 
 ## 快速开始
 
@@ -115,13 +115,13 @@ uv run python manage.py sync_permissions
 
 uv run python manage.py createsuperuser
 
-依次输入工号、手机号、姓名、密码。
+依次输入工号、手机号、姓名、密码.
 
 ### 5. 启动服务
 
 uv run python manage.py runserver
 
-访问 http://127.0.0.1:8000/api/v1/。
+访问 http://127.0.0.1:8000/api/v1/.
 
 ## API 概览
 
@@ -180,7 +180,7 @@ uv run python manage.py runserver
 
 { "code": 10001, "message": "参数校验失败", "data": {"phone": ["手机号已存在"]} }
 
-业务码定义在 core/codes.py,与 HTTP 状态码分离。
+业务码定义在 core/codes.py,与 HTTP 状态码分离.
 
 ## 工号生成
 
@@ -191,7 +191,7 @@ uv run python manage.py runserver
 
 ## 操作日志
 
-敏感操作(门店创建/编辑/启停、账号创建/编辑/启停/门店角色替换、角色创建/编辑)通过 log_operation() 显式记录。
+敏感操作(门店创建/编辑/启停、账号创建/编辑/启停/门店角色替换、角色创建/编辑)通过 log_operation() 显式记录.
 
 - 日志模型禁止 update/delete,审计日志不可篡改
 - 平台管理员专属查询

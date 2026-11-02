@@ -1,4 +1,4 @@
-"""products 模型导出。"""
+"""products 模型导出."""
 
 from apps.products.models.product import Product
 

@@ -1,4 +1,4 @@
-"""会员模型。"""
+"""会员模型."""
 
 from django.db import models
 
@@ -6,7 +6,7 @@ from apps.stores.models import Store
 
 
 class MemberLevel(models.TextChoices):
-    """会员等级。"""
+    """会员等级."""
 
     NORMAL = "normal", "普通会员"
     SILVER = "silver", "银卡会员"
@@ -14,7 +14,7 @@ class MemberLevel(models.TextChoices):
 
 
 class Member(models.Model):
-    """门店会员。"""
+    """门店会员."""
 
     store = models.ForeignKey(
         Store,

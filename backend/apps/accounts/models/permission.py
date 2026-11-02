@@ -1,14 +1,14 @@
-"""权限码模型。
+"""权限码模型.
 
-权限码由各业务模块在 apps.py 中声明,sync_permissions 命令同步到此表。
-管理员只能从已同步的权限码里给角色分配,不能自由创建。
+权限码由各业务模块在 apps.py 中声明,sync_permissions 命令同步到此表.
+管理员只能从已同步的权限码里给角色分配,不能自由创建.
 """
 
 from django.db import models
 
 
 class Permission(models.Model):
-    """系统权限点。每个权限码背后应对应一个真实的接口校验。"""
+    """系统权限点.每个权限码背后应对应一个真实的接口校验."""
 
     code = models.CharField(
         max_length=100,

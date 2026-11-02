@@ -1,4 +1,4 @@
-"""角色管理接口测试。"""
+"""角色管理接口测试."""
 
 from unittest.mock import patch
 
@@ -12,14 +12,14 @@ from apps.stores.models import Store
 
 
 class RoleTestBase(APITestCase):
-    """角色管理测试基类。"""
+    """角色管理测试基类."""
 
     ADMIN_PASSWORD = "Admin@123456"
     MANAGER_PASSWORD = "Manager@123456"
     STAFF_PASSWORD = "Staff@123456"
 
     def setUp(self):
-        # 禁用限流,避免测试受到请求频率影响。
+        # 禁用限流,避免测试受到请求频率影响.
         throttle_patcher = patch(
             "rest_framework.throttling.ScopedRateThrottle.get_rate",
             return_value=None,
@@ -35,7 +35,7 @@ class RoleTestBase(APITestCase):
         self._create_users()
 
     def _create_store(self):
-        """创建测试门店。"""
+        """创建测试门店."""
         self.store = Store.objects.create(
             code="S001",
             name="测试门店A",
@@ -43,7 +43,7 @@ class RoleTestBase(APITestCase):
         )
 
     def _create_permissions(self):
-        """创建测试权限码。"""
+        """创建测试权限码."""
         self.perm_account_list = Permission.objects.create(
             code="account:list",
             name="账号列表",
@@ -72,7 +72,7 @@ class RoleTestBase(APITestCase):
         )
 
     def _create_roles(self):
-        """创建测试角色及权限关系。"""
+        """创建测试角色及权限关系."""
         self.admin_role = Role.objects.create(
             code="role_admin",
             name="角色管理员",
@@ -100,7 +100,7 @@ class RoleTestBase(APITestCase):
         )
 
     def _create_users(self):
-        """创建测试用户及门店角色关系。"""
+        """创建测试用户及门店角色关系."""
         self.superuser = User.objects.create_superuser(
             employee_code=None,
             password=self.ADMIN_PASSWORD,
@@ -133,14 +133,14 @@ class RoleTestBase(APITestCase):
         )
 
     def _make_token(self, user, store_id=None, role_code=None):
-        """直接签发 JWT,绕过登录接口。"""
+        """直接签发 JWT,绕过登录接口."""
         refresh = RefreshToken.for_user(user)
         refresh["store_id"] = store_id
         refresh["role_code"] = role_code
         return str(refresh.access_token)
 
     def _authenticate(self, user, store_id=None, role_code=None):
-        """设置用户认证信息。"""
+        """设置用户认证信息."""
         token = self._make_token(
             user=user,
             store_id=store_id,
@@ -181,7 +181,7 @@ class RoleTestBase(APITestCase):
         response,
         expected_status=status.HTTP_200_OK,
     ):
-        """断言接口请求成功。"""
+        """断言接口请求成功."""
         self.assertEqual(
             response.status_code,
             expected_status,
@@ -197,7 +197,7 @@ class RoleTestBase(APITestCase):
         expected_status,
         expected_code=None,
     ):
-        """断言接口请求失败。"""
+        """断言接口请求失败."""
         self.assertEqual(
             response.status_code,
             expected_status,
@@ -211,10 +211,10 @@ class RoleTestBase(APITestCase):
 
 
 class RoleListTest(RoleTestBase):
-    """角色列表测试。"""
+    """角色列表测试."""
 
     def test_superuser_can_list(self):
-        """超级管理员可以查看角色列表。"""
+        """超级管理员可以查看角色列表."""
         self._auth_superuser()
 
         response = self.client.get(self.list_url)
@@ -223,14 +223,14 @@ class RoleListTest(RoleTestBase):
         self.assertGreaterEqual(data["total"], 3)
 
     def test_manager_with_perm_can_list(self):
-        """拥有角色列表权限的用户可以查看列表。"""
+        """拥有角色列表权限的用户可以查看列表."""
         self._auth_manager()
 
         response = self.client.get(self.list_url)
         self.assert_success(response)
 
     def test_staff_without_perm_cannot_list(self):
-        """没有角色列表权限的用户不能查看列表。"""
+        """没有角色列表权限的用户不能查看列表."""
         self._auth_staff()
 
         response = self.client.get(self.list_url)
@@ -241,7 +241,7 @@ class RoleListTest(RoleTestBase):
         )
 
     def test_anonymous_cannot_list(self):
-        """匿名用户不能查看角色列表。"""
+        """匿名用户不能查看角色列表."""
         response = self.client.get(self.list_url)
 
         self.assert_failed(
@@ -250,7 +250,7 @@ class RoleListTest(RoleTestBase):
         )
 
     def test_list_contains_user_count(self):
-        """列表返回 user_count,按用户去重。"""
+        """列表返回 user_count,按用户去重."""
         self._auth_superuser()
 
         response = self.client.get(self.list_url)
@@ -272,7 +272,7 @@ class RoleListTest(RoleTestBase):
         )
 
     def test_list_contains_permissions(self):
-        """列表返回角色的权限码详情。"""
+        """列表返回角色的权限码详情."""
         self._auth_superuser()
 
         response = self.client.get(self.list_url)
@@ -292,14 +292,14 @@ class RoleListTest(RoleTestBase):
 
 
 class RoleCreateTest(RoleTestBase):
-    """创建角色测试。"""
+    """创建角色测试."""
 
     def setUp(self):
         super().setUp()
         self._auth_superuser()
 
     def _create_role(self, **overrides):
-        """提交角色创建请求。"""
+        """提交角色创建请求."""
         data = {
             "code": "warehouse",
             "name": "仓管",
@@ -314,7 +314,7 @@ class RoleCreateTest(RoleTestBase):
         )
 
     def test_create_success(self):
-        """成功创建角色并分配权限。"""
+        """成功创建角色并分配权限."""
         response = self._create_role()
         data = self.assert_success(
             response,
@@ -331,7 +331,7 @@ class RoleCreateTest(RoleTestBase):
         )
 
     def test_create_empty_permissions(self):
-        """创建角色时允许权限码为空。"""
+        """创建角色时允许权限码为空."""
         response = self._create_role(
             code="empty_role",
             name="空权限角色",
@@ -345,7 +345,7 @@ class RoleCreateTest(RoleTestBase):
         self.assertEqual(data["permissions"], [])
 
     def test_create_code_uppercase_to_lower(self):
-        """角色编码自动转换为小写。"""
+        """角色编码自动转换为小写."""
         response = self._create_role(
             code="WAREHOUSE",
             permission_codes=[],
@@ -358,7 +358,7 @@ class RoleCreateTest(RoleTestBase):
         self.assertEqual(data["code"], "warehouse")
 
     def test_create_duplicate_code(self):
-        """角色编码重复时创建失败。"""
+        """角色编码重复时创建失败."""
         response = self._create_role(
             code="staff",
             name="重复编码",
@@ -371,7 +371,7 @@ class RoleCreateTest(RoleTestBase):
         )
 
     def test_create_duplicate_name(self):
-        """角色名称重复时创建失败。"""
+        """角色名称重复时创建失败."""
         response = self._create_role(
             code="new_staff",
             name="店员",
@@ -384,7 +384,7 @@ class RoleCreateTest(RoleTestBase):
         )
 
     def test_create_nonexistent_permission(self):
-        """不能分配不存在的权限码。"""
+        """不能分配不存在的权限码."""
         response = self._create_role(
             code="bad_role",
             name="非法权限",
@@ -397,7 +397,7 @@ class RoleCreateTest(RoleTestBase):
         )
 
     def test_create_inactive_permission(self):
-        """不能分配停用的权限码。"""
+        """不能分配停用的权限码."""
         response = self._create_role(
             code="inactive_perm_role",
             name="停用权限角色",
@@ -411,14 +411,14 @@ class RoleCreateTest(RoleTestBase):
 
 
 class RoleDetailTest(RoleTestBase):
-    """角色详情与编辑测试。"""
+    """角色详情与编辑测试."""
 
     def setUp(self):
         super().setUp()
         self._auth_superuser()
 
     def test_detail_success(self):
-        """查询角色详情。"""
+        """查询角色详情."""
         response = self.client.get(
             self._detail_url("role_admin"),
         )
@@ -428,7 +428,7 @@ class RoleDetailTest(RoleTestBase):
         self.assertEqual(data["user_count"], 1)
 
     def test_detail_not_found(self):
-        """查询不存在的角色。"""
+        """查询不存在的角色."""
         response = self.client.get(
             self._detail_url("nonexistent"),
         )
@@ -438,7 +438,7 @@ class RoleDetailTest(RoleTestBase):
         )
 
     def test_update_name(self):
-        """修改角色名称。"""
+        """修改角色名称."""
         response = self.client.patch(
             self._detail_url("staff"),
             {"name": "新店员名"},
@@ -449,7 +449,7 @@ class RoleDetailTest(RoleTestBase):
         self.assertEqual(data["name"], "新店员名")
 
     def test_update_duplicate_name(self):
-        """角色名称保持不变时不应报重复。"""
+        """角色名称保持不变时不应报重复."""
         response = self.client.patch(
             self._detail_url("staff"),
             {"name": "店员"},
@@ -458,7 +458,7 @@ class RoleDetailTest(RoleTestBase):
         self.assert_success(response)
 
     def test_update_name_conflict(self):
-        """不能修改为其他角色已使用的名称。"""
+        """不能修改为其他角色已使用的名称."""
         response = self.client.patch(
             self._detail_url("staff"),
             {"name": "店长"},
@@ -471,7 +471,7 @@ class RoleDetailTest(RoleTestBase):
         )
 
     def test_replace_permissions(self):
-        """全量替换角色权限。"""
+        """全量替换角色权限."""
         response = self.client.patch(
             self._detail_url("staff"),
             {
@@ -490,7 +490,7 @@ class RoleDetailTest(RoleTestBase):
         )
 
     def test_clear_permissions(self):
-        """允许清空角色权限。"""
+        """允许清空角色权限."""
         response = self.client.patch(
             self._detail_url("role_admin"),
             {"permission_codes": []},
@@ -501,7 +501,7 @@ class RoleDetailTest(RoleTestBase):
         self.assertEqual(data["permissions"], [])
 
     def test_system_role_can_update(self):
-        """系统角色允许修改名称和权限码。"""
+        """系统角色允许修改名称和权限码."""
         response = self.client.patch(
             self._detail_url("store_manager"),
             {
@@ -520,7 +520,7 @@ class RoleDetailTest(RoleTestBase):
         )
 
     def test_disable_role(self):
-        """停用角色。"""
+        """停用角色."""
         response = self.client.patch(
             self._detail_url("staff"),
             {"is_active": False},
@@ -532,14 +532,14 @@ class RoleDetailTest(RoleTestBase):
 
 
 class PermissionListTest(RoleTestBase):
-    """权限码列表测试。"""
+    """权限码列表测试."""
 
     def setUp(self):
         super().setUp()
         self.url = self._permission_list_url()
 
     def test_superuser_can_list(self):
-        """超级管理员可以查看权限码列表。"""
+        """超级管理员可以查看权限码列表."""
         self._auth_superuser()
 
         response = self.client.get(self.url)
@@ -550,7 +550,7 @@ class PermissionListTest(RoleTestBase):
         self.assertIn("role", modules)
 
     def test_inactive_permission_excluded(self):
-        """停用的权限码不出现在列表。"""
+        """停用的权限码不出现在列表."""
         self._auth_superuser()
 
         response = self.client.get(self.url)
@@ -563,7 +563,7 @@ class PermissionListTest(RoleTestBase):
         self.assertNotIn("account:update", all_codes)
 
     def test_staff_without_perm_cannot_list(self):
-        """没有权限的用户不能查看权限码列表。"""
+        """没有权限的用户不能查看权限码列表."""
         self._auth_staff()
 
         response = self.client.get(self.url)

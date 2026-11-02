@@ -1,4 +1,4 @@
-"""角色管理序列化器。"""
+"""角色管理序列化器."""
 
 from django.db import transaction
 from rest_framework import serializers
@@ -7,7 +7,7 @@ from apps.accounts.models import Permission, Role
 
 
 class PermissionItemSerializer(serializers.ModelSerializer):
-    """权限码项。"""
+    """权限码项."""
 
     class Meta:
         model = Permission
@@ -16,7 +16,7 @@ class PermissionItemSerializer(serializers.ModelSerializer):
 
 
 class RoleListSerializer(serializers.ModelSerializer):
-    """角色列表序列化器。"""
+    """角色列表序列化器."""
 
     permissions = PermissionItemSerializer(
         many=True,
@@ -43,11 +43,11 @@ class RoleListSerializer(serializers.ModelSerializer):
 
 
 class BaseRoleSerializer(serializers.Serializer):
-    """角色序列化器基础类。"""
+    """角色序列化器基础类."""
 
     @staticmethod
     def validate_permission_code_list(value):
-        """校验权限码是否存在且启用,并去重。"""
+        """校验权限码是否存在且启用,并去重."""
         permission_codes = list(dict.fromkeys(value))
 
         if not permission_codes:
@@ -71,7 +71,7 @@ class BaseRoleSerializer(serializers.Serializer):
 
     @staticmethod
     def set_permissions(role, permission_codes):
-        """全量替换角色权限。"""
+        """全量替换角色权限."""
         permissions = Permission.objects.filter(
             code__in=permission_codes,
         )
@@ -79,7 +79,7 @@ class BaseRoleSerializer(serializers.Serializer):
 
 
 class RoleCreateSerializer(BaseRoleSerializer):
-    """创建角色序列化器。"""
+    """创建角色序列化器."""
 
     code = serializers.CharField(
         max_length=50,
@@ -105,7 +105,7 @@ class RoleCreateSerializer(BaseRoleSerializer):
     )
 
     def validate_code(self, value):
-        """角色编码统一小写并校验唯一性。"""
+        """角色编码统一小写并校验唯一性."""
         value = value.strip().lower()
 
         if Role.objects.filter(code=value).exists():
@@ -114,7 +114,7 @@ class RoleCreateSerializer(BaseRoleSerializer):
         return value
 
     def validate_name(self, value):
-        """角色名称唯一性校验。"""
+        """角色名称唯一性校验."""
         value = value.strip()
 
         if Role.objects.filter(name=value).exists():
@@ -123,12 +123,12 @@ class RoleCreateSerializer(BaseRoleSerializer):
         return value
 
     def validate_permission_codes(self, value):
-        """校验权限码。"""
+        """校验权限码."""
         return self.validate_permission_code_list(value)
 
     @transaction.atomic
     def create(self, validated_data):
-        """创建角色并分配权限。"""
+        """创建角色并分配权限."""
         permission_codes = validated_data.pop("permission_codes", [])
 
         role = Role.objects.create(**validated_data)
@@ -139,7 +139,7 @@ class RoleCreateSerializer(BaseRoleSerializer):
 
 
 class RoleUpdateSerializer(BaseRoleSerializer):
-    """编辑角色序列化器。"""
+    """编辑角色序列化器."""
 
     name = serializers.CharField(
         max_length=50,
@@ -164,7 +164,7 @@ class RoleUpdateSerializer(BaseRoleSerializer):
     )
 
     def validate_name(self, value):
-        """角色名称唯一性校验。"""
+        """角色名称唯一性校验."""
         value = value.strip()
 
         queryset = Role.objects.filter(name=value)
@@ -178,12 +178,12 @@ class RoleUpdateSerializer(BaseRoleSerializer):
         return value
 
     def validate_permission_codes(self, value):
-        """校验权限码。"""
+        """校验权限码."""
         return self.validate_permission_code_list(value)
 
     @transaction.atomic
     def update(self, instance, validated_data):
-        """更新角色,权限码全量替换。"""
+        """更新角色,权限码全量替换."""
         permission_codes = validated_data.pop("permission_codes", None)
 
         update_fields = []

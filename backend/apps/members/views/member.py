@@ -1,4 +1,4 @@
-"""会员管理视图。"""
+"""会员管理视图."""
 
 from django.db import transaction
 from rest_framework import status
@@ -27,31 +27,31 @@ from core.responses import success
 
 
 class CanListMember(HasPerm):
-    """会员列表及详情权限。"""
+    """会员列表及详情权限."""
 
     required_perm = "member:list"
 
 
 class CanCreateMember(HasPerm):
-    """创建会员权限。"""
+    """创建会员权限."""
 
     required_perm = "member:create"
 
 
 class CanUpdateMember(HasPerm):
-    """编辑会员权限。"""
+    """编辑会员权限."""
 
     required_perm = "member:update"
 
 
 class CanRechargeMember(HasPerm):
-    """会员充值权限。"""
+    """会员充值权限."""
 
     required_perm = "member:recharge"
 
 
 class CanChangeLevel(HasPerm):
-    """会员等级调整权限（仅店长）。"""
+    """会员等级调整权限(仅店长)."""
 
     required_perm = "member:change_level"
 
@@ -62,7 +62,7 @@ class CanChangeLevel(HasPerm):
 
 
 def _get_member(pk: int, store_id: int, *, for_update: bool = False) -> Member:
-    """按主键和门店获取会员,不存在时抛业务异常。"""
+    """按主键和门店获取会员,不存在时抛业务异常."""
     queryset = Member.objects.filter(pk=pk, store_id=store_id)
 
     if for_update:
@@ -81,7 +81,7 @@ def _get_member(pk: int, store_id: int, *, for_update: bool = False) -> Member:
 
 
 def _get_store_id(request) -> int:
-    """从请求上下文获取当前门店 ID。"""
+    """从请求上下文获取当前门店 ID."""
     store_id = getattr(request, "store_id", None)
     if store_id is None:
         raise BizException(
@@ -98,17 +98,17 @@ def _get_store_id(request) -> int:
 
 
 class MemberListCreateView(APIView):
-    """会员列表与创建。"""
+    """会员列表与创建."""
 
     def get_permissions(self):
-        """按方法挂权限码。"""
+        """按方法挂权限码."""
         permission_class = (
             CanListMember if self.request.method == "GET" else CanCreateMember
         )
         return [IsAuthenticated(), permission_class()]
 
     def get(self, request):
-        """会员列表,分页,按门店隔离。"""
+        """会员列表,分页,按门店隔离."""
         store_id = _get_store_id(request)
         queryset = Member.objects.filter(store_id=store_id).order_by("-created_at")
 
@@ -126,7 +126,7 @@ class MemberListCreateView(APIView):
         )
 
     def post(self, request):
-        """创建会员。"""
+        """创建会员."""
         store_id = _get_store_id(request)
         serializer = MemberCreateSerializer(
             data=request.data, context={"store_id": store_id}
@@ -155,24 +155,24 @@ class MemberListCreateView(APIView):
 
 
 class MemberDetailView(APIView):
-    """会员详情与编辑。"""
+    """会员详情与编辑."""
 
     def get_permissions(self):
-        """按方法挂权限码。"""
+        """按方法挂权限码."""
         permission_class = (
             CanListMember if self.request.method == "GET" else CanUpdateMember
         )
         return [IsAuthenticated(), permission_class()]
 
     def get(self, request, pk):
-        """会员详情。"""
+        """会员详情."""
         store_id = _get_store_id(request)
         member = _get_member(pk, store_id)
         return success(data=MemberListSerializer(member).data)
 
     @transaction.atomic
     def patch(self, request, pk):
-        """编辑会员（姓名、手机号）。"""
+        """编辑会员(姓名、手机号)."""
         store_id = _get_store_id(request)
         member = _get_member(pk, store_id, for_update=True)
 
@@ -200,12 +200,12 @@ class MemberDetailView(APIView):
 
 
 class MemberRechargeView(APIView):
-    """会员充值。"""
+    """会员充值."""
 
     permission_classes = (IsAuthenticated, CanRechargeMember)
 
     def post(self, request, pk):
-        """为会员充值。"""
+        """为会员充值."""
         store_id = _get_store_id(request)
 
         serializer = MemberRechargeSerializer(data=request.data)
@@ -237,13 +237,13 @@ class MemberRechargeView(APIView):
 
 
 class MemberChangeLevelView(APIView):
-    """会员等级调整,仅店长。"""
+    """会员等级调整,仅店长."""
 
     permission_classes = (IsAuthenticated, CanChangeLevel)
 
     @transaction.atomic
     def patch(self, request, pk):
-        """调整会员等级。"""
+        """调整会员等级."""
         store_id = _get_store_id(request)
         member = _get_member(pk, store_id, for_update=True)
 

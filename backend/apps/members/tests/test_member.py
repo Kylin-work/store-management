@@ -1,4 +1,4 @@
-"""会员管理接口测试。"""
+"""会员管理接口测试."""
 
 from decimal import Decimal
 from unittest.mock import patch
@@ -15,7 +15,7 @@ from apps.stores.models import Store
 
 
 class MemberTestBase(APITestCase):
-    """会员测试基类。"""
+    """会员测试基类."""
 
     def setUp(self):
         throttle_patcher = patch(
@@ -129,7 +129,7 @@ class MemberTestBase(APITestCase):
 
 
 class MemberListTest(MemberTestBase):
-    """会员列表测试。"""
+    """会员列表测试."""
 
     def test_manager_sees_own_store_members(self):
         self._create_member(phone="13700000001")
@@ -160,7 +160,7 @@ class MemberListTest(MemberTestBase):
 
 
 class MemberCreateTest(MemberTestBase):
-    """创建会员测试。"""
+    """创建会员测试."""
 
     def setUp(self):
         super().setUp()
@@ -198,7 +198,7 @@ class MemberCreateTest(MemberTestBase):
 
 
 class MemberDetailTest(MemberTestBase):
-    """会员详情与编辑测试。"""
+    """会员详情与编辑测试."""
 
     def setUp(self):
         super().setUp()
@@ -237,7 +237,7 @@ class MemberDetailTest(MemberTestBase):
 
 
 class MemberRechargeTest(MemberTestBase):
-    """会员充值测试。"""
+    """会员充值测试."""
 
     def setUp(self):
         super().setUp()
@@ -302,7 +302,7 @@ class MemberRechargeTest(MemberTestBase):
 
 
 class MemberChangeLevelTest(MemberTestBase):
-    """会员等级调整测试。"""
+    """会员等级调整测试."""
 
     def setUp(self):
         super().setUp()

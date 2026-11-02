@@ -1,4 +1,4 @@
-"""操作日志序列化器。"""
+"""操作日志序列化器."""
 
 from rest_framework import serializers
 
@@ -6,7 +6,7 @@ from apps.logs.models import OperationLog
 
 
 class OperationLogSerializer(serializers.ModelSerializer):
-    """操作日志列表序列化器。"""
+    """操作日志列表序列化器."""
 
     user_employee_code = serializers.CharField(
         source="user.employee_code", read_only=True, label="操作人工号"

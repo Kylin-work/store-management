@@ -1,8 +1,8 @@
 """
-登录序列化器。
+登录序列化器.
 
-校验工号、密码及用户门店关联关系。
-认证通过后,将用户、门店及角色信息交给视图层签发 JWT。
+校验工号、密码及用户门店关联关系.
+认证通过后,将用户、门店及角色信息交给视图层签发 JWT.
 """
 
 from django.contrib.auth import authenticate
@@ -14,7 +14,7 @@ from core.exceptions import BizException
 
 
 class LoginSerializer(serializers.Serializer):
-    """用户登录入参校验及身份认证。"""
+    """用户登录入参校验及身份认证."""
 
     employee_code = serializers.CharField(
         max_length=8,
@@ -55,7 +55,7 @@ class LoginSerializer(serializers.Serializer):
     )
 
     def validate(self, attrs):
-        """验证登录凭证及用户门店权限。"""
+        """验证登录凭证及用户门店权限."""
 
         employee_code = attrs["employee_code"]
         password = attrs["password"]

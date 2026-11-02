@@ -1,4 +1,4 @@
-"""门店管理端权限类。"""
+"""门店管理端权限类."""
 
 from rest_framework.permissions import BasePermission
 
@@ -7,7 +7,7 @@ from core.exceptions import BizException
 
 
 class IsSuperUser(BasePermission):
-    """仅允许平台超级管理员访问。"""
+    """仅允许平台超级管理员访问."""
 
     message = "仅平台管理员可操作"
 

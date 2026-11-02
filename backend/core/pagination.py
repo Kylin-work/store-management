@@ -1,5 +1,5 @@
 """
-自定义分页器。
+自定义分页器.
 
 输出结构统一为：
 {
@@ -22,7 +22,7 @@ class StandardPagination(PageNumberPagination):
     max_page_size = 100  # 单页上限,防止一次拉太多
 
     def get_paginated_response(self, data):
-        """重写分页响应结构,字段名与前端约定一致。"""
+        """重写分页响应结构,字段名与前端约定一致."""
         return Response(
             OrderedDict(
                 [

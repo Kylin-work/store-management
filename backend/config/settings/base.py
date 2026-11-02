@@ -1,7 +1,7 @@
 """
 Django settings — base
 
-所有环境共享的配置。dev / prod 在此基础上覆盖。
+所有环境共享的配置.dev / prod 在此基础上覆盖.
 """
 
 import os

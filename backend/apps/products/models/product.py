@@ -1,4 +1,4 @@
-"""商品模型。"""
+"""商品模型."""
 
 from django.db import models
 
@@ -6,7 +6,7 @@ from apps.stores.models import Store
 
 
 class Product(models.Model):
-    """门店商品。"""
+    """门店商品."""
 
     store = models.ForeignKey(
         Store,

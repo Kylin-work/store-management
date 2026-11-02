@@ -1,6 +1,6 @@
-"""操作日志记录函数。
+"""操作日志记录函数.
 
-业务视图在关键操作成功后显式调用 log_operation,记录审计日志。
+业务视图在关键操作成功后显式调用 log_operation,记录审计日志.
 """
 
 from __future__ import annotations
@@ -24,7 +24,7 @@ def log_operation(
     store: Store | None = None,
     detail: dict[str, Any] | None = None,
 ) -> OperationLog:
-    """记录一条操作日志。
+    """记录一条操作日志.
 
     user: 操作人
     module: 模块,如 account、role、store
@@ -46,9 +46,9 @@ def log_operation(
 
 
 def get_operator_store(user: User) -> Store | None:
-    """从请求上下文推断操作发生的门店。
+    """从请求上下文推断操作发生的门店.
 
-    当前实现：从 JWT payload 的 store_id 读,由视图传入。
-    这里只作为占位,实际门店上下文由视图从 request.store_id 拿。
+    当前实现：从 JWT payload 的 store_id 读,由视图传入.
+    这里只作为占位,实际门店上下文由视图从 request.store_id 拿.
     """
     return None

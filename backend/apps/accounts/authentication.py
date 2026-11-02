@@ -1,11 +1,11 @@
 """
-自定义 JWT 认证类。
+自定义 JWT 认证类.
 
 在 SimpleJWT 默认认证的基础上：
-1. 解析 JWT 中的用户、门店及角色上下文。
-2. 验证用户当前是否仍拥有对应门店及角色。
-3. 加载当前角色有效的权限码集合。
-4. 将认证上下文挂载到 request,供权限类使用。
+1. 解析 JWT 中的用户、门店及角色上下文.
+2. 验证用户当前是否仍拥有对应门店及角色.
+3. 加载当前角色有效的权限码集合.
+4. 将认证上下文挂载到 request,供权限类使用.
 """
 
 from django.core.exceptions import MultipleObjectsReturned
@@ -16,10 +16,10 @@ from apps.accounts.models import UserStoreRole
 
 
 class StoreJWTAuthentication(JWTAuthentication):
-    """JWT 认证及门店权限上下文加载。"""
+    """JWT 认证及门店权限上下文加载."""
 
     def authenticate(self, request):
-        """认证 JWT 并加载当前用户权限。"""
+        """认证 JWT 并加载当前用户权限."""
 
         # 1. 执行 SimpleJWT 默认认证
         result = super().authenticate(request)

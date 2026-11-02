@@ -1,4 +1,4 @@
-"""账号管理视图。"""
+"""账号管理视图."""
 
 from django.db import transaction
 from rest_framework import status
@@ -26,19 +26,19 @@ from core.responses import success
 
 
 class CanListAccount(HasPerm):
-    """账号列表及详情权限。"""
+    """账号列表及详情权限."""
 
     required_perm = "account:list"
 
 
 class CanCreateAccount(HasPerm):
-    """创建账号权限。"""
+    """创建账号权限."""
 
     required_perm = "account:create"
 
 
 class CanUpdateAccount(HasPerm):
-    """编辑账号权限。"""
+    """编辑账号权限."""
 
     required_perm = "account:update"
 
@@ -49,10 +49,10 @@ class CanUpdateAccount(HasPerm):
 
 
 def _get_user(employee_code: str, *, for_update=False) -> User:
-    """按工号获取账号,不存在时抛出业务异常。
+    """按工号获取账号,不存在时抛出业务异常.
 
-    for_update=True 时加行锁,必须在事务内调用。
-    for_update=False 时预加载门店角色,供序列化使用。
+    for_update=True 时加行锁,必须在事务内调用.
+    for_update=False 时预加载门店角色,供序列化使用.
     """
     queryset = User.objects.all()
 
@@ -77,7 +77,7 @@ def _get_user(employee_code: str, *, for_update=False) -> User:
 
 
 def _get_account_queryset():
-    """获取预加载门店角色的账号查询集,供列表使用。"""
+    """获取预加载门店角色的账号查询集,供列表使用."""
     return User.objects.prefetch_related(
         "store_roles__store",
         "store_roles__role",
@@ -85,9 +85,9 @@ def _get_account_queryset():
 
 
 def _validate_store_roles(data):
-    """校验门店角色数据,并返回门店角色列表及角色映射。
+    """校验门店角色数据,并返回门店角色列表及角色映射.
 
-    必须在事务内调用(使用了 select_for_update)。
+    必须在事务内调用(使用了 select_for_update).
     """
     serializer = StoreRoleItemSerializer(
         data=data,
@@ -148,17 +148,17 @@ def _validate_store_roles(data):
 
 
 class AccountListCreateView(APIView):
-    """账号列表与创建。"""
+    """账号列表与创建."""
 
     def get_permissions(self):
-        """根据请求方法分配权限。"""
+        """根据请求方法分配权限."""
         permission_class = (
             CanListAccount if self.request.method == "GET" else CanCreateAccount
         )
         return [IsAuthenticated(), permission_class()]
 
     def get(self, request):
-        """账号列表,分页。"""
+        """账号列表,分页."""
         queryset = _get_account_queryset().order_by("employee_code", "pk")
 
         paginator = StandardPagination()
@@ -177,7 +177,7 @@ class AccountListCreateView(APIView):
 
     @transaction.atomic
     def post(self, request):
-        """创建账号,自动生成工号并分配门店角色。"""
+        """创建账号,自动生成工号并分配门店角色."""
         serializer = AccountCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
@@ -217,23 +217,23 @@ class AccountListCreateView(APIView):
 
 
 class AccountDetailView(APIView):
-    """账号详情与编辑。"""
+    """账号详情与编辑."""
 
     def get_permissions(self):
-        """根据请求方法分配权限。"""
+        """根据请求方法分配权限."""
         permission_class = (
             CanListAccount if self.request.method == "GET" else CanUpdateAccount
         )
         return [IsAuthenticated(), permission_class()]
 
     def get(self, request, employee_code):
-        """账号详情。"""
+        """账号详情."""
         user = _get_user(employee_code)
         return success(data=AccountListSerializer(user).data)
 
     @transaction.atomic
     def patch(self, request, employee_code):
-        """编辑账号：手机号、姓名、密码。"""
+        """编辑账号：手机号、姓名、密码."""
         user = _get_user(employee_code, for_update=True)
 
         serializer = AccountUpdateSerializer(
@@ -269,13 +269,13 @@ class AccountDetailView(APIView):
 
 
 class AccountStatusView(APIView):
-    """账号启用/停用。"""
+    """账号启用/停用."""
 
     permission_classes = (IsAuthenticated, CanUpdateAccount)
 
     @transaction.atomic
     def patch(self, request, employee_code):
-        """切换账号启用状态。"""
+        """切换账号启用状态."""
         user = _get_user(employee_code, for_update=True)
 
         is_active = request.data.get("is_active")
@@ -320,13 +320,13 @@ class AccountStatusView(APIView):
 
 
 class AccountStoreRolesView(APIView):
-    """账号门店角色调整。"""
+    """账号门店角色调整."""
 
     permission_classes = (IsAuthenticated, CanUpdateAccount)
 
     @transaction.atomic
     def put(self, request, employee_code):
-        """全量替换账号的门店角色。"""
+        """全量替换账号的门店角色."""
         user = _get_user(employee_code, for_update=True)
 
         store_roles, roles_by_code = _validate_store_roles(

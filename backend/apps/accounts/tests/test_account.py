@@ -1,4 +1,4 @@
-"""账号管理接口测试。"""
+"""账号管理接口测试."""
 
 from unittest.mock import patch
 
@@ -12,14 +12,14 @@ from apps.stores.models import Store
 
 
 class AccountTestBase(APITestCase):
-    """账号管理测试基类。"""
+    """账号管理测试基类."""
 
     ADMIN_PASSWORD = "Admin@123456"
     MANAGER_PASSWORD = "Manager@123456"
     STAFF_PASSWORD = "Staff@123456"
 
     def setUp(self):
-        # 禁用限流,避免测试受到请求频率影响。
+        # 禁用限流,避免测试受到请求频率影响.
         throttle_patcher = patch(
             "rest_framework.throttling.ScopedRateThrottle.get_rate",
             return_value=None,
@@ -35,7 +35,7 @@ class AccountTestBase(APITestCase):
         self._create_users()
 
     def _create_stores(self):
-        """创建测试门店。"""
+        """创建测试门店."""
         self.store = Store.objects.create(
             code="S001",
             name="测试门店A",
@@ -49,7 +49,7 @@ class AccountTestBase(APITestCase):
         )
 
     def _create_permissions(self):
-        """创建账号管理权限。"""
+        """创建账号管理权限."""
         self.perm_list = Permission.objects.create(
             code="account:list",
             name="账号列表",
@@ -67,7 +67,7 @@ class AccountTestBase(APITestCase):
         )
 
     def _create_roles(self):
-        """创建测试角色。"""
+        """创建测试角色."""
         self.admin_role = Role.objects.create(
             code="account_admin",
             name="账号管理员",
@@ -92,7 +92,7 @@ class AccountTestBase(APITestCase):
         )
 
     def _create_users(self):
-        """创建测试用户及门店角色关系。"""
+        """创建测试用户及门店角色关系."""
         self.superuser = User.objects.create_superuser(
             employee_code=None,
             password=self.ADMIN_PASSWORD,
@@ -125,14 +125,14 @@ class AccountTestBase(APITestCase):
         )
 
     def _make_token(self, user, store_id=None, role_code=None):
-        """直接签发 JWT,绕过登录接口。"""
+        """直接签发 JWT,绕过登录接口."""
         refresh = RefreshToken.for_user(user)
         refresh["store_id"] = store_id
         refresh["role_code"] = role_code
         return str(refresh.access_token)
 
     def _authenticate(self, user, store_id=None, role_code=None):
-        """设置用户认证信息。"""
+        """设置用户认证信息."""
         token = self._make_token(
             user=user,
             store_id=store_id,
@@ -160,7 +160,7 @@ class AccountTestBase(APITestCase):
         )
 
     def _create_payload(self, **overrides):
-        """生成账号创建请求数据。"""
+        """生成账号创建请求数据."""
         data = {
             "phone": "13800000010",
             "real_name": "新员工",
@@ -194,7 +194,7 @@ class AccountTestBase(APITestCase):
         )
 
     def assert_success(self, response, expected_status=status.HTTP_200_OK):
-        """断言接口请求成功。"""
+        """断言接口请求成功."""
         self.assertEqual(
             response.status_code,
             expected_status,
@@ -205,7 +205,7 @@ class AccountTestBase(APITestCase):
         return response.data["data"]
 
     def assert_failed(self, response, expected_status, expected_code=None):
-        """断言接口请求失败。"""
+        """断言接口请求失败."""
         self.assertEqual(
             response.status_code,
             expected_status,
@@ -216,7 +216,7 @@ class AccountTestBase(APITestCase):
 
 
 class AccountListTest(AccountTestBase):
-    """账号列表测试。"""
+    """账号列表测试."""
 
     def test_superuser_can_list(self):
         self._auth_superuser()
@@ -251,7 +251,7 @@ class AccountListTest(AccountTestBase):
 
 
 class AccountCreateTest(AccountTestBase):
-    """创建账号测试。"""
+    """创建账号测试."""
 
     def setUp(self):
         super().setUp()
@@ -268,7 +268,7 @@ class AccountCreateTest(AccountTestBase):
             expected_status=status.HTTP_201_CREATED,
         )
 
-        # 工号自动生成,8 位纯数字。
+        # 工号自动生成,8 位纯数字.
         self.assertEqual(len(data["employee_code"]), 8)
         self.assertTrue(data["employee_code"].isdigit())
         self.assertEqual(data["phone"], "13800000010")
@@ -284,7 +284,7 @@ class AccountCreateTest(AccountTestBase):
         )
 
     def test_employee_code_increments(self):
-        """连续创建账号,工号递增。"""
+        """连续创建账号,工号递增."""
         response1 = self.client.post(
             self.list_url,
             self._create_payload(phone="13800000011"),
@@ -311,7 +311,7 @@ class AccountCreateTest(AccountTestBase):
         self.assertEqual(code2, code1 + 1)
 
     def test_duplicate_phone(self):
-        """手机号重复时创建失败。"""
+        """手机号重复时创建失败."""
         response = self.client.post(
             self.list_url,
             self._create_payload(phone="13800000001"),
@@ -324,7 +324,7 @@ class AccountCreateTest(AccountTestBase):
         )
 
     def test_empty_store_roles(self):
-        """门店角色列表为空时创建失败。"""
+        """门店角色列表为空时创建失败."""
         response = self.client.post(
             self.list_url,
             self._create_payload(store_roles=[]),
@@ -337,7 +337,7 @@ class AccountCreateTest(AccountTestBase):
         )
 
     def test_inactive_store(self):
-        """不能为账号分配停用门店。"""
+        """不能为账号分配停用门店."""
         response = self.client.post(
             self.list_url,
             self._create_payload(
@@ -357,7 +357,7 @@ class AccountCreateTest(AccountTestBase):
         )
 
     def test_inactive_role(self):
-        """不能分配停用角色。"""
+        """不能分配停用角色."""
         response = self.client.post(
             self.list_url,
             self._create_payload(
@@ -377,7 +377,7 @@ class AccountCreateTest(AccountTestBase):
         )
 
     def test_duplicate_store_in_roles(self):
-        """同一账号不能重复分配同一个门店。"""
+        """同一账号不能重复分配同一个门店."""
         response = self.client.post(
             self.list_url,
             self._create_payload(
@@ -401,7 +401,7 @@ class AccountCreateTest(AccountTestBase):
         )
 
     def test_weak_password(self):
-        """弱密码不能通过验证。"""
+        """弱密码不能通过验证."""
         response = self.client.post(
             self.list_url,
             self._create_payload(password="123456"),
@@ -415,7 +415,7 @@ class AccountCreateTest(AccountTestBase):
 
 
 class AccountDetailTest(AccountTestBase):
-    """账号详情与编辑测试。"""
+    """账号详情与编辑测试."""
 
     def setUp(self):
         super().setUp()
@@ -436,7 +436,7 @@ class AccountDetailTest(AccountTestBase):
         self.url = self._detail_url(self.target.employee_code)
 
     def test_detail_success(self):
-        """查询账号详情。"""
+        """查询账号详情."""
         response = self.client.get(self.url)
         data = self.assert_success(response)
 
@@ -446,7 +446,7 @@ class AccountDetailTest(AccountTestBase):
         )
 
     def test_detail_not_found(self):
-        """查询不存在的账号。"""
+        """查询不存在的账号."""
         response = self.client.get(
             self._detail_url("99999999"),
         )
@@ -456,7 +456,7 @@ class AccountDetailTest(AccountTestBase):
         )
 
     def test_update_phone(self):
-        """修改账号手机号。"""
+        """修改账号手机号."""
         response = self.client.patch(
             self.url,
             {"phone": "13800000021"},
@@ -467,7 +467,7 @@ class AccountDetailTest(AccountTestBase):
         self.assertEqual(data["phone"], "13800000021")
 
     def test_update_duplicate_phone(self):
-        """不能修改为其他账号已使用的手机号。"""
+        """不能修改为其他账号已使用的手机号."""
         response = self.client.patch(
             self.url,
             {"phone": "13800000001"},
@@ -480,7 +480,7 @@ class AccountDetailTest(AccountTestBase):
         )
 
     def test_update_password(self):
-        """修改账号密码。"""
+        """修改账号密码."""
         new_password = "NewPassword@123456"
 
         response = self.client.patch(
@@ -497,7 +497,7 @@ class AccountDetailTest(AccountTestBase):
 
 
 class AccountStatusTest(AccountTestBase):
-    """账号状态切换测试。"""
+    """账号状态切换测试."""
 
     def setUp(self):
         super().setUp()
@@ -518,7 +518,7 @@ class AccountStatusTest(AccountTestBase):
         self.url = self._status_url(self.target.employee_code)
 
     def test_disable_account(self):
-        """停用账号。"""
+        """停用账号."""
         response = self.client.patch(
             self.url,
             {"is_active": False},
@@ -532,7 +532,7 @@ class AccountStatusTest(AccountTestBase):
         self.assertFalse(self.target.is_active)
 
     def test_invalid_is_active(self):
-        """拒绝非布尔类型的状态值。"""
+        """拒绝非布尔类型的状态值."""
         response = self.client.patch(
             self.url,
             {"is_active": "yes"},
@@ -546,7 +546,7 @@ class AccountStatusTest(AccountTestBase):
 
 
 class AccountStoreRolesTest(AccountTestBase):
-    """账号门店角色调整测试。"""
+    """账号门店角色调整测试."""
 
     def setUp(self):
         super().setUp()
@@ -575,7 +575,7 @@ class AccountStoreRolesTest(AccountTestBase):
         )
 
     def _replace_store_roles(self, store_roles):
-        """提交门店角色全量替换请求。"""
+        """提交门店角色全量替换请求."""
         return self.client.put(
             self.url,
             {"store_roles": store_roles},
@@ -583,7 +583,7 @@ class AccountStoreRolesTest(AccountTestBase):
         )
 
     def test_replace_store_roles(self):
-        """全量替换为两个门店的角色。"""
+        """全量替换为两个门店的角色."""
         response = self._replace_store_roles(
             [
                 {
@@ -600,14 +600,14 @@ class AccountStoreRolesTest(AccountTestBase):
 
         self.assertEqual(len(data["store_roles"]), 2)
 
-        # 原有关联被替换,最终保留两个新关联。
+        # 原有关联被替换,最终保留两个新关联.
         self.assertEqual(
             UserStoreRole.objects.filter(user=self.target).count(),
             2,
         )
 
     def test_inactive_store_rejected(self):
-        """拒绝分配停用门店。"""
+        """拒绝分配停用门店."""
         response = self._replace_store_roles(
             [
                 {
@@ -623,7 +623,7 @@ class AccountStoreRolesTest(AccountTestBase):
         )
 
     def test_inactive_role_rejected(self):
-        """拒绝分配停用角色。"""
+        """拒绝分配停用角色."""
         response = self._replace_store_roles(
             [
                 {
@@ -639,7 +639,7 @@ class AccountStoreRolesTest(AccountTestBase):
         )
 
     def test_duplicate_store_rejected(self):
-        """拒绝重复分配同一个门店。"""
+        """拒绝重复分配同一个门店."""
         response = self._replace_store_roles(
             [
                 {
@@ -659,7 +659,7 @@ class AccountStoreRolesTest(AccountTestBase):
         )
 
     def test_empty_list_rejected(self):
-        """拒绝空门店角色列表。"""
+        """拒绝空门店角色列表."""
         response = self._replace_store_roles([])
 
         self.assert_failed(

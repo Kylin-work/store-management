@@ -1,4 +1,4 @@
-"""会员序列化器。"""
+"""会员序列化器."""
 
 from decimal import Decimal
 
@@ -8,7 +8,7 @@ from apps.members.models import Member, MemberLevel
 
 
 class MemberListSerializer(serializers.ModelSerializer):
-    """会员列表/详情序列化器。"""
+    """会员列表/详情序列化器."""
 
     level_display = serializers.CharField(
         source="get_level_display", read_only=True, label="等级名称"
@@ -31,7 +31,7 @@ class MemberListSerializer(serializers.ModelSerializer):
 
 
 class MemberCreateSerializer(serializers.Serializer):
-    """创建会员序列化器。"""
+    """创建会员序列化器."""
 
     name = serializers.CharField(
         max_length=50, allow_blank=False, trim_whitespace=True, label="姓名"
@@ -41,21 +41,21 @@ class MemberCreateSerializer(serializers.Serializer):
     )
 
     def validate_phone(self, value):
-        """同一门店内手机号唯一,由视图传入 store_id 后校验。"""
+        """同一门店内手机号唯一,由视图传入 store_id 后校验."""
         store_id = self.context.get("store_id")
         if store_id and Member.objects.filter(store_id=store_id, phone=value).exists():
             raise serializers.ValidationError("该门店下手机号已存在")
         return value
 
     def create(self, validated_data):
-        """创建会员,余额、积分、等级用默认值。"""
+        """创建会员,余额、积分、等级用默认值."""
         return Member.objects.create(
             store_id=self.context["store_id"], **validated_data
         )
 
 
 class MemberUpdateSerializer(serializers.Serializer):
-    """编辑会员序列化器。仅允许改姓名和手机号。"""
+    """编辑会员序列化器.仅允许改姓名和手机号."""
 
     name = serializers.CharField(
         max_length=50,
@@ -73,7 +73,7 @@ class MemberUpdateSerializer(serializers.Serializer):
     )
 
     def validate_phone(self, value):
-        """同一门店内手机号唯一,排除自身。"""
+        """同一门店内手机号唯一,排除自身."""
         store_id = self.context.get("store_id")
         qs = Member.objects.filter(store_id=store_id, phone=value)
         if self.instance:
@@ -83,7 +83,7 @@ class MemberUpdateSerializer(serializers.Serializer):
         return value
 
     def update(self, instance, validated_data):
-        """更新会员信息。"""
+        """更新会员信息."""
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         if validated_data:
@@ -92,7 +92,7 @@ class MemberUpdateSerializer(serializers.Serializer):
 
 
 class MemberRechargeSerializer(serializers.Serializer):
-    """会员充值入参序列化器。"""
+    """会员充值入参序列化器."""
 
     amount = serializers.DecimalField(
         max_digits=12,
@@ -104,6 +104,6 @@ class MemberRechargeSerializer(serializers.Serializer):
 
 
 class MemberChangeLevelSerializer(serializers.Serializer):
-    """会员等级调整序列化器。"""
+    """会员等级调整序列化器."""
 
     level = serializers.ChoiceField(choices=MemberLevel.choices, label="等级")

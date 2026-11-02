@@ -1,8 +1,8 @@
 """
-当前用户信息视图。
+当前用户信息视图.
 
 返回当前登录用户的基本信息及认证上下文,
-用于前端初始化用户信息、门店信息和权限信息。
+用于前端初始化用户信息、门店信息和权限信息.
 """
 
 from rest_framework.permissions import IsAuthenticated
@@ -12,7 +12,7 @@ from core.responses import success
 
 
 class MeView(APIView):
-    """获取当前登录用户信息。"""
+    """获取当前登录用户信息."""
 
     permission_classes = (IsAuthenticated,)
 

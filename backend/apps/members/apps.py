@@ -1,4 +1,4 @@
-"""members 应用配置。"""
+"""members 应用配置."""
 
 from django.apps import AppConfig
 
@@ -9,7 +9,7 @@ class MembersConfig(AppConfig):
     verbose_name = "会员管理"
 
     def ready(self):
-        """应用就绪时注册权限码。"""
+        """应用就绪时注册权限码."""
         from core.permissions import register_permissions
 
         register_permissions(

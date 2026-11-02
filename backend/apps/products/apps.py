@@ -1,4 +1,4 @@
-"""products 应用配置。"""
+"""products 应用配置."""
 
 from django.apps import AppConfig
 
@@ -9,7 +9,7 @@ class ProductsConfig(AppConfig):
     verbose_name = "商品管理"
 
     def ready(self):
-        """应用就绪时注册权限码。"""
+        """应用就绪时注册权限码."""
         from core.permissions import register_permissions
 
         register_permissions(

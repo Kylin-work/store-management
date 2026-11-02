@@ -1,4 +1,4 @@
-"""accounts 路由。"""
+"""accounts 路由."""
 
 from django.urls import path
 

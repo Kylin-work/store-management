@@ -1,4 +1,4 @@
-"""门店管理端接口测试。"""
+"""门店管理端接口测试."""
 
 from django.urls import reverse
 from rest_framework import status
@@ -10,7 +10,7 @@ from apps.stores.models import Store
 
 
 class StoreManageTestBase(APITestCase):
-    """门店管理测试基类。"""
+    """门店管理测试基类."""
 
     def setUp(self):
         # 门店
@@ -50,7 +50,7 @@ class StoreManageTestBase(APITestCase):
         )
 
     def _generate_token(self, user, store_id=None, role_code=None):
-        """直接生成测试 JWT。"""
+        """直接生成测试 JWT."""
         refresh = RefreshToken.for_user(user)
 
         if store_id is not None:
@@ -62,11 +62,11 @@ class StoreManageTestBase(APITestCase):
         return str(refresh.access_token)
 
     def _admin_token(self):
-        """获取平台管理员 Token。"""
+        """获取平台管理员 Token."""
         return self._generate_token(self.admin)
 
     def _normal_token(self):
-        """获取普通用户 Token。"""
+        """获取普通用户 Token."""
         return self._generate_token(
             user=self.normal_user,
             store_id=self.store.pk,
@@ -74,21 +74,21 @@ class StoreManageTestBase(APITestCase):
         )
 
     def _authenticate_admin(self):
-        """使用平台管理员身份访问接口。"""
+        """使用平台管理员身份访问接口."""
         token = self._admin_token()
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
 
     def _authenticate_normal_user(self):
-        """使用普通用户身份访问接口。"""
+        """使用普通用户身份访问接口."""
         token = self._normal_token()
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
 
 
 class StoreManagePermissionTest(StoreManageTestBase):
-    """门店管理端权限测试。"""
+    """门店管理端权限测试."""
 
     def test_anonymous_cannot_access(self):
-        """未登录访问管理端返回 401。"""
+        """未登录访问管理端返回 401."""
         response = self.client.get(reverse("store-manage-list"))
 
         self.assertEqual(
@@ -97,7 +97,7 @@ class StoreManagePermissionTest(StoreManageTestBase):
         )
 
     def test_normal_user_cannot_access(self):
-        """普通用户访问管理端返回 403。"""
+        """普通用户访问管理端返回 403."""
         self._authenticate_normal_user()
 
         response = self.client.get(reverse("store-manage-list"))
@@ -110,14 +110,14 @@ class StoreManagePermissionTest(StoreManageTestBase):
 
 
 class StoreManageCrudTest(StoreManageTestBase):
-    """门店管理端 CRUD 测试。"""
+    """门店管理端 CRUD 测试."""
 
     def setUp(self):
         super().setUp()
         self._authenticate_admin()
 
     def test_list_stores(self):
-        """管理员能列出全部门店。"""
+        """管理员能列出全部门店."""
         response = self.client.get(reverse("store-manage-list"))
 
         self.assertEqual(
@@ -134,7 +134,7 @@ class StoreManageCrudTest(StoreManageTestBase):
         )
 
     def test_create_store_code_uppercase(self):
-        """创建门店时 code 自动转大写。"""
+        """创建门店时 code 自动转大写."""
         response = self.client.post(
             reverse("store-manage-list"),
             {
@@ -158,7 +158,7 @@ class StoreManageCrudTest(StoreManageTestBase):
         self.assertTrue(Store.objects.filter(code="S002").exists())
 
     def test_create_store_duplicate_code(self):
-        """重复 code 被拦截。"""
+        """重复 code 被拦截."""
         response = self.client.post(
             reverse("store-manage-list"),
             {
@@ -176,7 +176,7 @@ class StoreManageCrudTest(StoreManageTestBase):
         self.assertEqual(response.data["code"], 10001)
 
     def test_create_store_duplicate_name(self):
-        """重复门店名称被拦截。"""
+        """重复门店名称被拦截."""
         response = self.client.post(
             reverse("store-manage-list"),
             {
@@ -194,7 +194,7 @@ class StoreManageCrudTest(StoreManageTestBase):
         self.assertEqual(response.data["code"], 10001)
 
     def test_update_store(self):
-        """编辑门店名称。"""
+        """编辑门店名称."""
         url = reverse(
             "store-manage-detail",
             kwargs={"pk": self.store.pk},
@@ -222,7 +222,7 @@ class StoreManageCrudTest(StoreManageTestBase):
         )
 
     def test_disable_store(self):
-        """停用门店。"""
+        """停用门店."""
         url = reverse(
             "store-manage-status",
             kwargs={"pk": self.store.pk},
@@ -244,7 +244,7 @@ class StoreManageCrudTest(StoreManageTestBase):
         self.assertFalse(self.store.is_active)
 
     def test_enable_store(self):
-        """重新启用门店。"""
+        """重新启用门店."""
         self.store.is_active = False
         self.store.save(update_fields=["is_active"])
 
@@ -269,7 +269,7 @@ class StoreManageCrudTest(StoreManageTestBase):
         self.assertTrue(self.store.is_active)
 
     def test_status_invalid_type(self):
-        """is_active 传非布尔值被拦截。"""
+        """is_active 传非布尔值被拦截."""
         url = reverse(
             "store-manage-status",
             kwargs={"pk": self.store.pk},
@@ -288,7 +288,7 @@ class StoreManageCrudTest(StoreManageTestBase):
         self.assertEqual(response.data["code"], 10001)
 
     def test_store_not_found(self):
-        """访问不存在的门店返回 404。"""
+        """访问不存在的门店返回 404."""
         url = reverse(
             "store-manage-detail",
             kwargs={"pk": 999999},
@@ -302,7 +302,7 @@ class StoreManageCrudTest(StoreManageTestBase):
         )
 
     def test_update_store_not_found(self):
-        """编辑不存在的门店返回 404。"""
+        """编辑不存在的门店返回 404."""
         url = reverse(
             "store-manage-detail",
             kwargs={"pk": 999999},
@@ -320,7 +320,7 @@ class StoreManageCrudTest(StoreManageTestBase):
         )
 
     def test_disable_store_not_found(self):
-        """停用不存在的门店返回 404。"""
+        """停用不存在的门店返回 404."""
         url = reverse(
             "store-manage-status",
             kwargs={"pk": 999999},
@@ -339,10 +339,10 @@ class StoreManageCrudTest(StoreManageTestBase):
 
 
 class StoreOptionListTest(StoreManageTestBase):
-    """公开门店列表测试。"""
+    """公开门店列表测试."""
 
     def test_anonymous_can_access(self):
-        """未登录也能访问公开门店列表。"""
+        """未登录也能访问公开门店列表."""
         response = self.client.get(reverse("store-list"))
 
         self.assertEqual(
@@ -355,7 +355,7 @@ class StoreOptionListTest(StoreManageTestBase):
         )
 
     def test_inactive_store_excluded(self):
-        """停用门店不出现在公开列表。"""
+        """停用门店不出现在公开列表."""
         Store.objects.create(
             code="S002",
             name="停用门店",

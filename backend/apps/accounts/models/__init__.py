@@ -1,4 +1,4 @@
-"""accounts 模型导出。"""
+"""accounts 模型导出."""
 
 from apps.accounts.models.permission import Permission
 from apps.accounts.models.role import Role

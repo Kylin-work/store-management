@@ -1,4 +1,4 @@
-"""menus 应用配置。"""
+"""menus 应用配置."""
 
 from django.apps import AppConfig
 

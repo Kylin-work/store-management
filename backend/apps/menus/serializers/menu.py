@@ -1,4 +1,4 @@
-"""菜单序列化器。"""
+"""菜单序列化器."""
 
 from rest_framework import serializers
 
@@ -6,7 +6,7 @@ from apps.menus.models import Menu
 
 
 class MenuTreeSerializer(serializers.ModelSerializer):
-    """菜单树序列化器,递归输出子菜单。"""
+    """菜单树序列化器,递归输出子菜单."""
 
     children = serializers.SerializerMethodField(label="子菜单")
 

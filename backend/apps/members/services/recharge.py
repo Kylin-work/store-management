@@ -1,6 +1,6 @@
-"""会员充值业务逻辑。
+"""会员充值业务逻辑.
 
-充值涉及改余额、写充值记录、写操作日志,必须在同一事务内完成。
+充值涉及改余额、写充值记录、写操作日志,必须在同一事务内完成.
 """
 
 from decimal import Decimal
@@ -24,7 +24,7 @@ def recharge_member(
     staff,
     store_id: int,
 ) -> RechargeRecord:
-    """为会员充值。
+    """为会员充值.
 
     member_id: 会员 ID
     amount: 充值金额,必须为正数,且不超过单笔上限

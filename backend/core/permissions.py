@@ -1,11 +1,11 @@
 """
-权限码注册表 + 权限校验基类。
+权限码注册表 + 权限校验基类.
 
 各业务模块的 apps.py 在 ready() 中调用 register_permissions() 登记本模块权限码,
-sync_permissions 管理命令把注册表同步到 accounts.Permission 表。
+sync_permissions 管理命令把注册表同步到 accounts.Permission 表.
 
 DRF 权限类继承 HasPerm,声明 required_perm,
-校验时从 request.auth 里的权限码集合判断是否放行。
+校验时从 request.auth 里的权限码集合判断是否放行.
 """
 
 from rest_framework.permissions import BasePermission
@@ -18,7 +18,7 @@ PERMISSION_REGISTRY: dict[str, dict] = {}
 
 
 def register_permissions(items: list[dict]) -> None:
-    """业务模块注册权限码。items 每项形如：
+    """业务模块注册权限码.items 每项形如：
     {"code": "member:recharge", "name": "会员充值", "module": "member"}
     """
     for item in items:
@@ -30,7 +30,7 @@ def register_permissions(items: list[dict]) -> None:
 
 
 class HasPerm(BasePermission):
-    """接口级权限基类。子类声明 required_perm,校验当前请求的权限集合。"""
+    """接口级权限基类.子类声明 required_perm,校验当前请求的权限集合."""
 
     required_perm: str = ""
 

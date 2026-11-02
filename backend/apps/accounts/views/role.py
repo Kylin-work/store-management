@@ -1,4 +1,4 @@
-"""角色管理视图。"""
+"""角色管理视图."""
 
 from django.db import transaction
 from django.db.models import Count
@@ -25,19 +25,19 @@ from core.responses import success
 
 
 class CanListRole(HasPerm):
-    """角色列表及详情权限。"""
+    """角色列表及详情权限."""
 
     required_perm = "role:list"
 
 
 class CanManageRole(HasPerm):
-    """创建、编辑角色权限。"""
+    """创建、编辑角色权限."""
 
     required_perm = "role:manage"
 
 
 class CanListPermission(HasPerm):
-    """权限码列表权限。"""
+    """权限码列表权限."""
 
     required_perm = "permission:list"
 
@@ -48,7 +48,7 @@ class CanListPermission(HasPerm):
 
 
 def _get_role(code: str, *, for_update=False) -> Role:
-    """按角色编码获取角色。"""
+    """按角色编码获取角色."""
     queryset = Role.objects.all()
 
     if for_update:
@@ -67,7 +67,7 @@ def _get_role(code: str, *, for_update=False) -> Role:
 
 
 def _get_role_queryset():
-    """获取带用户数量和权限的角色查询集。"""
+    """获取带用户数量和权限的角色查询集."""
     return Role.objects.annotate(
         user_count=Count(
             "user_store_roles__user",
@@ -77,7 +77,7 @@ def _get_role_queryset():
 
 
 def _get_role_detail(pk) -> Role:
-    """获取角色详情,预加载权限和用户数量。"""
+    """获取角色详情,预加载权限和用户数量."""
     return _get_role_queryset().get(pk=pk)
 
 
@@ -87,17 +87,17 @@ def _get_role_detail(pk) -> Role:
 
 
 class RoleListCreateView(APIView):
-    """角色列表与创建。"""
+    """角色列表与创建."""
 
     def get_permissions(self):
-        """根据请求方法分配权限。"""
+        """根据请求方法分配权限."""
         permission_class = (
             CanListRole if self.request.method == "GET" else CanManageRole
         )
         return [IsAuthenticated(), permission_class()]
 
     def get(self, request):
-        """角色列表,分页。"""
+        """角色列表,分页."""
         queryset = _get_role_queryset().order_by("code", "pk")
 
         paginator = StandardPagination()
@@ -116,7 +116,7 @@ class RoleListCreateView(APIView):
 
     @transaction.atomic
     def post(self, request):
-        """创建角色。"""
+        """创建角色."""
         serializer = RoleCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         role = serializer.save()
@@ -148,17 +148,17 @@ class RoleListCreateView(APIView):
 
 
 class RoleDetailView(APIView):
-    """角色详情与编辑。"""
+    """角色详情与编辑."""
 
     def get_permissions(self):
-        """根据请求方法分配权限。"""
+        """根据请求方法分配权限."""
         permission_class = (
             CanListRole if self.request.method == "GET" else CanManageRole
         )
         return [IsAuthenticated(), permission_class()]
 
     def get(self, request, code):
-        """角色详情。"""
+        """角色详情."""
         role = _get_role(code)
         role = _get_role_detail(role.pk)
 
@@ -166,7 +166,7 @@ class RoleDetailView(APIView):
 
     @transaction.atomic
     def patch(self, request, code):
-        """编辑角色：名称、启用状态、权限码。"""
+        """编辑角色：名称、启用状态、权限码."""
         role = _get_role(code, for_update=True)
 
         serializer = RoleUpdateSerializer(
@@ -201,12 +201,12 @@ class RoleDetailView(APIView):
 
 
 class PermissionListView(APIView):
-    """权限码列表,按模块分组。"""
+    """权限码列表,按模块分组."""
 
     permission_classes = (IsAuthenticated, CanListPermission)
 
     def get(self, request):
-        """返回按模块分组的权限码。"""
+        """返回按模块分组的权限码."""
         permissions = (
             Permission.objects.filter(
                 is_active=True,
