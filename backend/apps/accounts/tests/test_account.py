@@ -678,7 +678,6 @@ class AccountStatusTest(AccountTestBase):
         other_user.refresh_from_db()
         self.assertTrue(other_user.is_active)
 
-
     def test_invalid_is_active(self):
         """拒绝非布尔类型的状态值."""
         response = self.client.patch(
@@ -753,6 +752,121 @@ class AccountStoreRolesTest(AccountTestBase):
             UserStoreRole.objects.filter(user=self.target).count(),
             2,
         )
+
+    def test_replace_store_roles_deactivates_removed_roles(self):
+        """超级管理员全局替换时停用未提交的任职记录."""
+        removed_role = UserStoreRole.objects.create(
+            user=self.target,
+            store=self.store2,
+            role=self.staff_role,
+        )
+
+        response = self._replace_store_roles(
+            [
+                {
+                    "store_id": self.store.pk,
+                    "role_code": self.admin_role.code,
+                }
+            ],
+        )
+        self.assert_success(response)
+
+        removed_role.refresh_from_db()
+        self.assertFalse(removed_role.is_active)
+
+        # 原任职记录保留,没有被物理删除
+        self.assertTrue(
+            UserStoreRole.objects.filter(
+                pk=removed_role.pk,
+                user=self.target,
+                store=self.store2,
+            ).exists()
+        )
+
+        current_role = UserStoreRole.objects.get(
+            user=self.target,
+            store=self.store,
+        )
+        self.assertEqual(current_role.role, self.admin_role)
+        self.assertTrue(current_role.is_active)
+
+    def test_manager_updates_current_store_role_only(self):
+        """门店管理员修改当前门店角色时保留其他门店任职."""
+        other_role = UserStoreRole.objects.create(
+            user=self.target,
+            store=self.store2,
+            role=self.staff_role,
+        )
+
+        self._auth_manager()
+        response = self._replace_store_roles(
+            [
+                {
+                    "store_id": self.store.pk,
+                    "role_code": self.admin_role.code,
+                }
+            ],
+        )
+        self.assert_success(response)
+
+        current_role = UserStoreRole.objects.get(
+            user=self.target,
+            store=self.store,
+        )
+        other_role.refresh_from_db()
+
+        self.assertEqual(current_role.role, self.admin_role)
+        self.assertTrue(current_role.is_active)
+        self.assertEqual(other_role.role, self.staff_role)
+        self.assertTrue(other_role.is_active)
+
+    def test_manager_cannot_assign_other_store_role(self):
+        """门店管理员不能分配其他门店的角色."""
+        self._auth_manager()
+        response = self._replace_store_roles(
+            [
+                {
+                    "store_id": self.store2.pk,
+                    "role_code": self.staff_role.code,
+                }
+            ],
+        )
+
+        self.assert_failed(
+            response,
+            status.HTTP_400_BAD_REQUEST,
+            expected_code=10001,
+        )
+
+    def test_manager_cannot_change_other_store_account_roles(self):
+        """门店管理员不能调整仅属于其他门店的员工角色."""
+        other_user = User.objects.create_user(
+            employee_code=None,
+            password="Other@123456",
+            phone="13800000041",
+            real_name="其他门店员工",
+        )
+        UserStoreRole.objects.create(
+            user=other_user,
+            store=self.store2,
+            role=self.staff_role,
+        )
+
+        self._auth_manager()
+        response = self.client.put(
+            self._store_roles_url(other_user.employee_code),
+            {
+                "store_roles": [
+                    {
+                        "store_id": self.store.pk,
+                        "role_code": self.admin_role.code,
+                    }
+                ]
+            },
+            format="json",
+        )
+
+        self.assert_failed(response, status.HTTP_404_NOT_FOUND)
 
     def test_inactive_store_rejected(self):
         """拒绝分配停用门店."""

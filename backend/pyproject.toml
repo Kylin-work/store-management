@@ -18,7 +18,15 @@ dependencies = [
 dev = [
     "coverage>=7.17.0",
     "pip-audit>=2.10.1",
+    "pytest>=9.2.0",
+    "pytest-django>=4.14.0",
     "ruff>=0.17.3",
 ]
+
 [tool.ruff]
 exclude = ["*/migrations/*"]
+
+# 把 pytest 配置改成 TOML 格式并加上引号
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings.dev"
+python_files = ["tests.py", "test_*.py", "*_tests.py"]
