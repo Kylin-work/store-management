@@ -123,6 +123,10 @@ uv run python manage.py createsuperuser
 ```
 
 依次输入工号、手机号、姓名、密码。
+创建后需要修复工号序列，避免后续创建普通用户时工号冲突：
+```bash
+uv run python manage.py fix_sequence
+```
 
 ### 5. 启动服务
 
