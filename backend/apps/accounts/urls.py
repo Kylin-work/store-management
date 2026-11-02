@@ -5,8 +5,8 @@ from django.urls import path
 from apps.accounts.views.account import (
     AccountDetailView,
     AccountListCreateView,
-    AccountStoreRolesView,
 )
+from apps.accounts.views.account_role import AccountStoreRolesView
 from apps.accounts.views.account_status import AccountStatusView
 from apps.accounts.views.login import LoginView
 from apps.accounts.views.me import MeView
