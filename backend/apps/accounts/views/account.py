@@ -12,6 +12,7 @@ from apps.accounts.serializers.account import (
     AccountUpdateSerializer,
     StoreRoleItemSerializer,
 )
+from apps.logs.services.logger import log_operation
 from apps.stores.models import Store
 from core.codes import BizCode
 from core.exceptions import BizException
@@ -181,6 +182,26 @@ class AccountListCreateView(APIView):
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
 
+        log_operation(
+            user=request.user,
+            module="account",
+            action="create",
+            target_type="User",
+            target_id=user.employee_code,
+            detail={
+                "employee_code": user.employee_code,
+                "phone": user.phone,
+                "real_name": user.real_name,
+                "store_roles": [
+                    {
+                        "store_id": item["store_id"],
+                        "role_code": item["role_code"],
+                    }
+                    for item in serializer.validated_data.get("store_roles", [])
+                ],
+            },
+        )
+
         # 重新加载，带出门店角色
         user = _get_account_queryset().get(pk=user.pk)
 
@@ -223,6 +244,19 @@ class AccountDetailView(APIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
+        changed_fields = list(serializer.validated_data.keys())
+        log_operation(
+            user=request.user,
+            module="account",
+            action="update",
+            target_type="User",
+            target_id=user.employee_code,
+            detail={
+                "changed_fields": changed_fields,
+                "password_changed": "password" in changed_fields,
+            },
+        )
+
         # 重新加载，带出门店角色
         user = _get_account_queryset().get(pk=user.pk)
 
@@ -263,6 +297,15 @@ class AccountStatusView(APIView):
         user.is_active = is_active
         user.save(update_fields=("is_active",))
 
+        log_operation(
+            user=request.user,
+            module="account",
+            action="enable" if is_active else "disable",
+            target_type="User",
+            target_id=user.employee_code,
+            detail={"is_active": is_active},
+        )
+
         return success(
             data={
                 "employee_code": user.employee_code,
@@ -302,6 +345,23 @@ class AccountStoreRolesView(APIView):
                 )
                 for item in store_roles
             ]
+        )
+
+        log_operation(
+            user=request.user,
+            module="account",
+            action="update_store_roles",
+            target_type="User",
+            target_id=user.employee_code,
+            detail={
+                "store_roles": [
+                    {
+                        "store_id": item["store_id"],
+                        "role_code": item["role_code"],
+                    }
+                    for item in store_roles
+                ]
+            },
         )
 
         # 重新加载门店角色，避免使用旧的预取缓存
