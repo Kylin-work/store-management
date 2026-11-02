@@ -1,5 +1,7 @@
 """会员序列化器。"""
 
+from decimal import Decimal
+
 from rest_framework import serializers
 
 from apps.members.models import Member, MemberLevel
@@ -95,8 +97,8 @@ class MemberRechargeSerializer(serializers.Serializer):
     amount = serializers.DecimalField(
         max_digits=12,
         decimal_places=2,
-        min_value=0.01,
-        max_value=50000.00,
+        min_value=Decimal("0.01"),
+        max_value=Decimal("50000.00"),
         label="充值金额",
     )
 
