@@ -159,12 +159,26 @@ class AccountListCreateView(APIView):
 
     def get(self, request):
         """账号列表,分页."""
-        queryset = _get_account_queryset().order_by("employee_code", "pk")
+        queryset = _get_account_queryset()
+
+        # 普通门店管理员只能查看当前门店的员工
+        if not request.user.is_superuser:
+            queryset = queryset.filter(
+                store_roles__store_id=request.store_id
+            ).distinct()
+
+        queryset = queryset.order_by("employee_code", "pk")
 
         paginator = StandardPagination()
         page = paginator.paginate_queryset(queryset, request)
 
-        serializer = AccountListSerializer(page, many=True)
+        serializer = AccountListSerializer(
+            page,
+            many=True,
+            context={
+                "store_id": (None if request.user.is_superuser else request.store_id)
+            },
+        )
 
         return success(
             data={

@@ -39,7 +39,13 @@ class AccountListSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
     def get_store_roles(self, obj):
-        """返回账号的全部门店角色."""
+        """返回当前管理范围内的门店角色."""
+        queryset = obj.store_roles.select_related("store", "role").all()
+
+        store_id = self.context.get("store_id")
+        if store_id is not None:
+            queryset = queryset.filter(store_id=store_id)
+
         return [
             {
                 "store_id": item.store_id,
@@ -47,7 +53,7 @@ class AccountListSerializer(serializers.ModelSerializer):
                 "role_code": item.role.code,
                 "role_name": item.role.name,
             }
-            for item in obj.store_roles.select_related("store", "role").all()
+            for item in queryset
         ]
 
 
