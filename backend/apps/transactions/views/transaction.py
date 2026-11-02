@@ -9,6 +9,7 @@ from apps.transactions.models import Transaction
 from apps.transactions.serializers.transaction import (
     TransactionCreateSerializer,
     TransactionListSerializer,
+    TransactionRefundSerializer,
 )
 from apps.transactions.services.create_transaction import create_transaction
 from apps.transactions.services.refund_transaction import refund_transaction
@@ -204,13 +205,19 @@ class TransactionRefundView(APIView):
 
     @transaction.atomic
     def post(self, request, pk):
-        """全额退款."""
+        """退款, 支持全额和部分退款."""
         store_id = _get_store_id(request)
+
+        serializer = TransactionRefundSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        items = serializer.validated_data.get("items") or None
 
         tx = refund_transaction(
             transaction_id=pk,
             store_id=store_id,
             staff=request.user,
+            items=items,
         )
 
         tx = (

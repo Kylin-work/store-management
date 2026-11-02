@@ -9,6 +9,7 @@ from rest_framework.test import APITestCase
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.accounts.models import Permission, Role, User, UserStoreRole
+from apps.logs.models import OperationLog
 from apps.members.models import Member
 from apps.products.models import Product
 from apps.stores.models import Store
@@ -382,3 +383,121 @@ class TransactionDetailTest(TransactionTestBase):
             reverse("transaction-detail", kwargs={"pk": self.tx_id})
         )
         self.assert_failed(response, status.HTTP_404_NOT_FOUND, expected_code=60001)
+
+
+class TransactionPartialRefundTest(TransactionTestBase):
+    """交易部分退款测试."""
+
+    def setUp(self):
+        super().setUp()
+        # 买 3 件商品, 关联会员
+        self._auth_manager()
+        response = self.client.post(
+            reverse("transaction-list"),
+            self._create_transaction_payload(
+                member_id=self.member.pk,
+                items=[{"product_id": self.product.pk, "quantity": 3}],
+            ),
+            format="json",
+        )
+        data = response.data["data"]
+        self.tx_id = data["id"]
+        self.item_id = data["items"][0]["id"]
+        # 原始: 库存 100-3=97, 积分 150
+
+    def _partial_refund(self, items):
+        return self.client.post(
+            reverse("transaction-refund", kwargs={"pk": self.tx_id}),
+            {"items": items},
+            format="json",
+        )
+
+    def test_partial_refund(self):
+        """退 1 件, 状态变为部分退款, 库存加 1, 积分按比例扣."""
+        self._auth_manager()
+        response = self._partial_refund(
+            [{"item_id": self.item_id, "quantity": 1}]
+        )
+        data = self.assert_success(response)
+        self.assertEqual(data["status"], "partial_refunded")
+
+        # 库存从 97 回滚到 98
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.stock, 98)
+
+        # 积分: 消费 150 元得 150 积分, 退 1/3 (50 元), 扣 50, 剩 100
+        self.member.refresh_from_db()
+        self.assertEqual(self.member.points, 100)
+
+    def test_partial_refund_all_quantities(self):
+        """分三次退完, 状态最终变为已退款."""
+        self._auth_manager()
+
+        # 退 1
+        r1 = self._partial_refund([{"item_id": self.item_id, "quantity": 1}])
+        self.assertEqual(r1.data["data"]["status"], "partial_refunded")
+
+        # 再退 1
+        r2 = self._partial_refund([{"item_id": self.item_id, "quantity": 1}])
+        self.assertEqual(r2.data["data"]["status"], "partial_refunded")
+
+        # 退最后 1
+        r3 = self._partial_refund([{"item_id": self.item_id, "quantity": 1}])
+        self.assertEqual(r3.data["data"]["status"], "refunded")
+
+        # 库存完全回滚
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.stock, 100)
+
+    def test_refund_exceed_remaining(self):
+        """退款数量超过剩余可退数量被拒."""
+        self._auth_manager()
+        response = self._partial_refund(
+            [{"item_id": self.item_id, "quantity": 4}]
+        )
+        self.assert_failed(response, status.HTTP_400_BAD_REQUEST, expected_code=10001)
+
+    def test_refund_invalid_item(self):
+        """明细不属于该交易被拒."""
+        self._auth_manager()
+        response = self._partial_refund([{"item_id": 99999, "quantity": 1}])
+        self.assert_failed(response, status.HTTP_400_BAD_REQUEST, expected_code=10001)
+
+    def test_refund_zero_quantity(self):
+        """退款数量为 0 被序列化器拦截."""
+        self._auth_manager()
+        response = self._partial_refund(
+            [{"item_id": self.item_id, "quantity": 0}]
+        )
+        self.assert_failed(response, status.HTTP_400_BAD_REQUEST, expected_code=10001)
+
+    def test_refund_after_full_refund(self):
+        """已全额退款后再退款被拒."""
+        self._auth_manager()
+        # 退完 3 件
+        self._partial_refund([{"item_id": self.item_id, "quantity": 3}])
+
+        # 再退
+        response = self._partial_refund(
+            [{"item_id": self.item_id, "quantity": 1}]
+        )
+        self.assert_failed(response, status.HTTP_400_BAD_REQUEST, expected_code=60002)
+
+    def test_partial_refund_log(self):
+        """部分退款写入操作日志."""
+        self._auth_manager()
+        self._partial_refund([{"item_id": self.item_id, "quantity": 1}])
+
+        logs = OperationLog.objects.filter(
+            module="transaction",
+            action="refund",
+            target_id=str(self.tx_id),
+        )
+        self.assertEqual(logs.count(), 1)
+        log = logs.first()
+        self.assertEqual(log.detail["refund_amount"], "50.00")
+        self.assertEqual(log.detail["new_status"], "partial_refunded")
+        self.assertEqual(
+            log.detail["items"],
+            [{"item_id": self.item_id, "quantity": 1}],
+        )

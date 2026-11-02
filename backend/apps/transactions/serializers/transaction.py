@@ -90,6 +90,21 @@ class TransactionCreateSerializer(serializers.Serializer):
         return value
 
 
-class TransactionRefundSerializer(serializers.Serializer):
-    """退款入参序列化器 (当前无需额外参数)."""
 
+
+class TransactionRefundItemSerializer(serializers.Serializer):
+    """退款明细项."""
+
+    item_id = serializers.IntegerField(min_value=1, label="交易明细ID")
+    quantity = serializers.IntegerField(min_value=1, label="退款数量")
+
+
+class TransactionRefundSerializer(serializers.Serializer):
+    """退款入参序列化器.
+
+    items 为空或未传表示全额退款, 传了则按明细部分退款.
+    """
+
+    items = TransactionRefundItemSerializer(
+        many=True, required=False, allow_empty=True, label="退款明细"
+    )

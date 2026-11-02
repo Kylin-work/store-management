@@ -20,6 +20,7 @@ class TransactionStatus(models.TextChoices):
     """交易状态."""
 
     COMPLETED = "completed", "已完成"
+    PARTIAL_REFUNDED = "partial_refunded", "部分退款"
     REFUNDED = "refunded", "已退款"
 
 

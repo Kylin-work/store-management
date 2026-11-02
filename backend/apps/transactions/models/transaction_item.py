@@ -26,6 +26,9 @@ class TransactionItem(models.Model):
     quantity = models.IntegerField(
         verbose_name="数量", db_comment="购买数量"
     )
+    refunded_quantity = models.IntegerField(
+        default=0, verbose_name="已退数量", db_comment="已退款的数量"
+    )
     unit_price = models.DecimalField(
         max_digits=12,
         decimal_places=2,
