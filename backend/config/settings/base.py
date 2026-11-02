@@ -47,7 +47,7 @@ INSTALLED_APPS = [
     "apps.members",
     "apps.products",
     "apps.transactions",
-    # "apps.dashboard",
+    "apps.dashboard",
     "apps.menus",
     "apps.logs",
 ]
