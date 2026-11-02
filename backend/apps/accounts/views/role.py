@@ -3,7 +3,7 @@
 from django.db import transaction
 from django.db.models import Count
 from rest_framework import status
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import BasePermission, IsAuthenticated
 from rest_framework.views import APIView
 
 from apps.accounts.models import Permission, Role
@@ -24,16 +24,13 @@ from core.responses import success
 # ---------------------------------------------------------------------------
 
 
-class CanListRole(HasPerm):
-    """角色列表及详情权限."""
+class IsPlatformAdmin(BasePermission):
+    """仅允许平台超级管理员访问角色管理接口."""
 
-    required_perm = "role:list"
-
-
-class CanManageRole(HasPerm):
-    """创建、编辑角色权限."""
-
-    required_perm = "role:manage"
+    def has_permission(self, request, view):
+        return bool(
+            request.user and request.user.is_authenticated and request.user.is_superuser
+        )
 
 
 class CanListPermission(HasPerm):
@@ -91,10 +88,7 @@ class RoleListCreateView(APIView):
 
     def get_permissions(self):
         """根据请求方法分配权限."""
-        permission_class = (
-            CanListRole if self.request.method == "GET" else CanManageRole
-        )
-        return [IsAuthenticated(), permission_class()]
+        return [IsPlatformAdmin()]
 
     def get(self, request):
         """角色列表,分页."""
@@ -152,10 +146,7 @@ class RoleDetailView(APIView):
 
     def get_permissions(self):
         """根据请求方法分配权限."""
-        permission_class = (
-            CanListRole if self.request.method == "GET" else CanManageRole
-        )
-        return [IsAuthenticated(), permission_class()]
+        return [IsPlatformAdmin()]
 
     def get(self, request, code):
         """角色详情."""

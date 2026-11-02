@@ -297,6 +297,18 @@ class LoginFailTest(LoginTestBase):
 
         self.assert_login_failed(response, 20003)
 
+    def test_inactive_role(self):
+        """角色停用后不能通过该角色登录."""
+        self.role.is_active = False
+        self.role.save(update_fields=["is_active"])
+
+        response = self._login(
+            self.user.employee_code,
+            "Test@123456",
+            self.store.pk,
+        )
+
+        self.assert_login_failed(response, 20003)
 
     def test_inactive_store_role(self):
         """停用门店任职后不能登录该门店."""

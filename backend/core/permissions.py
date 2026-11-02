@@ -43,11 +43,8 @@ class HasPerm(BasePermission):
         if request.user.is_superuser:
             return True
 
-        # 权限码集合由认证阶段写入 request.auth(JWT payload)或 request.user 的缓存属性
-        perm_set = getattr(request, "perm_set", None)
-        if perm_set is None:
-            # 兜底：从 request.auth 里取(JWT payload 中带 perms)
-            perm_set = (request.auth or {}).get("perms", [])
+        # 权限码集合由认证阶段实时写入 request.perm_set
+        perm_set = getattr(request, "perm_set", None) or set()
 
         if self.required_perm not in perm_set:
             raise BizException(

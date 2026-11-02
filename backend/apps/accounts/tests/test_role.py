@@ -222,12 +222,12 @@ class RoleListTest(RoleTestBase):
 
         self.assertGreaterEqual(data["total"], 3)
 
-    def test_manager_with_perm_can_list(self):
-        """拥有角色列表权限的用户可以查看列表."""
+    def test_manager_with_perm_cannot_list(self):
+        """门店管理员即使拥有角色权限也不能查看全局角色."""
         self._auth_manager()
 
         response = self.client.get(self.list_url)
-        self.assert_success(response)
+        self.assert_failed(response, status.HTTP_403_FORBIDDEN)
 
     def test_staff_without_perm_cannot_list(self):
         """没有角色列表权限的用户不能查看列表."""
@@ -435,6 +435,52 @@ class RoleDetailTest(RoleTestBase):
         self.assert_failed(
             response,
             status.HTTP_404_NOT_FOUND,
+        )
+
+    def test_manager_cannot_view_role_detail(self):
+        """门店管理员不能查看全局角色详情."""
+        self._auth_manager()
+
+        response = self.client.get(self._detail_url("staff"))
+        self.assert_failed(response, status.HTTP_403_FORBIDDEN)
+
+    def test_manager_cannot_create_role(self):
+        """门店管理员不能创建全局角色."""
+        self._auth_manager()
+
+        response = self.client.post(
+            self.list_url,
+            {
+                "code": "new_role",
+                "name": "新角色",
+                "permission_codes": [],
+            },
+            format="json",
+        )
+        self.assert_failed(response, status.HTTP_403_FORBIDDEN)
+
+    def test_manager_cannot_update_role(self):
+        """门店管理员不能修改全局角色."""
+        self._auth_manager()
+
+        response = self.client.patch(
+            self._detail_url("staff"),
+            {"name": "修改后的店员"},
+            format="json",
+        )
+        self.assert_failed(response, status.HTTP_403_FORBIDDEN)
+
+    def test_update_empty_data(self):
+        """空更新请求应返回参数错误."""
+        response = self.client.patch(
+            self._detail_url("staff"),
+            {},
+            format="json",
+        )
+        self.assert_failed(
+            response,
+            status.HTTP_400_BAD_REQUEST,
+            expected_code=10001,
         )
 
     def test_update_name(self):

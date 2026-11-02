@@ -38,10 +38,12 @@ class Command(BaseCommand):
         if seq is None:
             Sequence.objects.create(name="employee_code", current_value=max_value)
         else:
-            Sequence.objects.filter(name="employee_code").update(
-                current_value=max_value
-            )
+            if max_value > seq.current_value:
+                seq.current_value = max_value
+                seq.save(update_fields=["current_value"])
 
         self.stdout.write(
-            self.style.SUCCESS(f"序列已推到 {max_value}, 下一个工号 {max_value + 1:08d}")
+            self.style.SUCCESS(
+                f"序列已推到 {max_value}, 下一个工号 {max_value + 1:08d}"
+            )
         )

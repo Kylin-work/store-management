@@ -163,6 +163,13 @@ class RoleUpdateSerializer(BaseRoleSerializer):
         label="权限码列表",
     )
 
+    def validate(self, attrs):
+        """禁止空更新."""
+        if not attrs:
+            raise serializers.ValidationError("至少提供一个需要修改的字段")
+
+        return attrs
+
     def validate_name(self, value):
         """角色名称唯一性校验."""
         value = value.strip()

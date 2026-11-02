@@ -108,6 +108,7 @@ class LoginSerializer(serializers.Serializer):
                 store_id=store_id,
                 store__is_active=True,
                 is_active=True,
+                role__is_active=True,
             )
             .first()
         )
