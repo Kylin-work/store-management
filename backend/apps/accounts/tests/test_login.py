@@ -298,6 +298,45 @@ class LoginFailTest(LoginTestBase):
         self.assert_login_failed(response, 20003)
 
 
+    def test_inactive_store_role(self):
+        """停用门店任职后不能登录该门店."""
+        store_role = UserStoreRole.objects.get(
+            user=self.user,
+            store=self.store,
+        )
+        store_role.is_active = False
+        store_role.save(update_fields=["is_active"])
+
+        response = self._login(
+            self.user.employee_code,
+            "Test@123456",
+            self.store.pk,
+        )
+
+        self.assert_login_failed(response, 20003)
+
+    def test_inactive_store_role_invalidates_existing_token(self):
+        """停用门店任职后旧 JWT 也不能继续使用."""
+        refresh = RefreshToken.for_user(self.user)
+        refresh["store_id"] = self.store.pk
+        refresh["role_code"] = self.role.code
+        access_token = str(refresh.access_token)
+
+        store_role = UserStoreRole.objects.get(
+            user=self.user,
+            store=self.store,
+        )
+        store_role.is_active = False
+        store_role.save(update_fields=["is_active"])
+
+        self.client.credentials(
+            HTTP_AUTHORIZATION=f"Bearer {access_token}",
+        )
+        response = self.client.get(reverse("auth-me"))
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
 class LoginValidationTest(LoginTestBase):
     """登录入参校验测试."""
 

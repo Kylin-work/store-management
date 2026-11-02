@@ -61,6 +61,7 @@ class StoreJWTAuthentication(JWTAuthentication):
                     user=user,
                     store_id=store_id,
                     store__is_active=True,
+                    is_active=True,
                     role__code=role_code,
                     role__is_active=True,
                 )

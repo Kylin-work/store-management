@@ -34,6 +34,13 @@ class UserStoreRole(models.Model):
         verbose_name="角色",
         db_comment="角色",
     )
+    # 当前员工在该门店的任职状态
+    is_active = models.BooleanField(
+        default=True,
+        db_index=True,
+        verbose_name="任职状态",
+        db_comment="是否在该门店任职",
+    )
 
     class Meta:
         db_table = "accounts_user_store_role"
