@@ -5,6 +5,7 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 
+from apps.logs.services.logger import log_operation
 from apps.stores.models import Store
 from apps.stores.permissions.store import IsSuperUser
 from apps.stores.serializers.store_manage import StoreManageSerializer
@@ -66,7 +67,14 @@ class StoreManageListCreateView(StoreManageBaseView):
         serializer = StoreManageSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         store = serializer.save()
-
+        log_operation(
+            user=request.user,
+            module="store",
+            action="create",
+            target_type="Store",
+            target_id=str(store.pk),
+            detail={"code": store.code, "name": store.name},
+        )
         return success(
             data=StoreManageSerializer(store).data,
             http_status=status.HTTP_201_CREATED,
@@ -92,7 +100,14 @@ class StoreManageDetailView(StoreManageBaseView):
         )
         serializer.is_valid(raise_exception=True)
         serializer.save()
-
+        log_operation(
+            user=request.user,
+            module="store",
+            action="update",
+            target_type="Store",
+            target_id=str(store.pk),
+            detail={"changed_fields": list(serializer.validated_data.keys())},
+        )
         return success(data=serializer.data)
 
     @transaction.atomic
@@ -107,7 +122,14 @@ class StoreManageDetailView(StoreManageBaseView):
         )
         serializer.is_valid(raise_exception=True)
         serializer.save()
-
+        log_operation(
+            user=request.user,
+            module="store",
+            action="update",
+            target_type="Store",
+            target_id=str(store.pk),
+            detail={"changed_fields": list(serializer.validated_data.keys())},
+        )
         return success(data=serializer.data)
 
 
@@ -137,7 +159,14 @@ class StoreManageStatusView(StoreManageBaseView):
 
         store.is_active = is_active
         store.save(update_fields=("is_active", "updated_at"))
-
+        log_operation(
+            user=request.user,
+            module="store",
+            action="enable" if is_active else "disable",
+            target_type="Store",
+            target_id=str(store.pk),
+            detail={"is_active": is_active},
+        )
         return success(
             data={
                 "id": store.pk,
