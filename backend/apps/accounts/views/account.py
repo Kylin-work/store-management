@@ -48,13 +48,22 @@ class CanUpdateAccount(HasPerm):
 # ---------------------------------------------------------------------------
 
 
-def _get_user(employee_code: str, *, for_update=False) -> User:
+def _get_user(
+    employee_code: str,
+    *,
+    for_update=False,
+    store_id=None,
+) -> User:
     """按工号获取账号,不存在时抛出业务异常.
 
     for_update=True 时加行锁,必须在事务内调用.
     for_update=False 时预加载门店角色,供序列化使用.
     """
     queryset = User.objects.all()
+
+    # 普通门店管理员只能访问当前门店的账号
+    if store_id is not None:
+        queryset = queryset.filter(store_roles__store_id=store_id)
 
     if for_update:
         queryset = queryset.select_for_update()
@@ -242,13 +251,24 @@ class AccountDetailView(APIView):
 
     def get(self, request, employee_code):
         """账号详情."""
-        user = _get_user(employee_code)
-        return success(data=AccountListSerializer(user).data)
+        store_id = None if request.user.is_superuser else request.store_id
+        user = _get_user(employee_code, store_id=store_id)
+        return success(
+            data=AccountListSerializer(
+                user,
+                context={"store_id": store_id},
+            ).data
+        )
 
     @transaction.atomic
     def patch(self, request, employee_code):
         """编辑账号：手机号、姓名、密码."""
-        user = _get_user(employee_code, for_update=True)
+        store_id = None if request.user.is_superuser else request.store_id
+        user = _get_user(
+            employee_code,
+            for_update=True,
+            store_id=store_id,
+        )
 
         serializer = AccountUpdateSerializer(
             user,
@@ -274,7 +294,12 @@ class AccountDetailView(APIView):
         # 重新加载,带出门店角色
         user = _get_account_queryset().get(pk=user.pk)
 
-        return success(data=AccountListSerializer(user).data)
+        return success(
+            data=AccountListSerializer(
+                user,
+                context={"store_id": store_id},
+            ).data
+        )
 
 
 # ---------------------------------------------------------------------------

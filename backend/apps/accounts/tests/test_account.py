@@ -455,6 +455,62 @@ class AccountDetailTest(AccountTestBase):
             status.HTTP_404_NOT_FOUND,
         )
 
+    def test_manager_cannot_view_other_store_account(self):
+        """门店管理员不能查看其他门店员工."""
+        other_store = Store.objects.create(
+            code="S003",
+            name="测试门店C",
+            store_type="direct",
+        )
+        other_user = User.objects.create_user(
+            employee_code=None,
+            password="Other@123456",
+            phone="13800000022",
+            real_name="其他门店员工",
+        )
+        UserStoreRole.objects.create(
+            user=other_user,
+            store=other_store,
+            role=self.staff_role,
+        )
+
+        self._auth_manager()
+        response = self.client.get(
+            self._detail_url(other_user.employee_code),
+        )
+
+        self.assert_failed(response, status.HTTP_404_NOT_FOUND)
+
+    def test_manager_cannot_update_other_store_account(self):
+        """门店管理员不能修改其他门店员工."""
+        other_store = Store.objects.create(
+            code="S003",
+            name="测试门店C",
+            store_type="direct",
+        )
+        other_user = User.objects.create_user(
+            employee_code=None,
+            password="Other@123456",
+            phone="13800000022",
+            real_name="其他门店员工",
+        )
+        UserStoreRole.objects.create(
+            user=other_user,
+            store=other_store,
+            role=self.staff_role,
+        )
+
+        self._auth_manager()
+        response = self.client.patch(
+            self._detail_url(other_user.employee_code),
+            {"phone": "13800000023"},
+            format="json",
+        )
+
+        self.assert_failed(response, status.HTTP_404_NOT_FOUND)
+        other_user.refresh_from_db()
+        self.assertEqual(other_user.phone, "13800000022")
+
     def test_update_phone(self):
         """修改账号手机号."""
         response = self.client.patch(
