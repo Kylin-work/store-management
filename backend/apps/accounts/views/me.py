@@ -5,9 +5,10 @@
 用于前端初始化用户信息、门店信息和权限信息。
 """
 
-from core.responses import success
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
+
+from core.responses import success
 
 
 class MeView(APIView):

@@ -1,10 +1,5 @@
 """角色管理视图。"""
 
-from core.codes import BizCode
-from core.exceptions import BizException
-from core.pagination import StandardPagination
-from core.permissions import HasPerm
-from core.responses import success
 from django.db import transaction
 from django.db.models import Count
 from rest_framework import status
@@ -18,6 +13,11 @@ from apps.accounts.serializers.role import (
     RoleUpdateSerializer,
 )
 from apps.logs.services.logger import log_operation
+from core.codes import BizCode
+from core.exceptions import BizException
+from core.pagination import StandardPagination
+from core.permissions import HasPerm
+from core.responses import success
 
 # ---------------------------------------------------------------------------
 # 权限类

@@ -3,7 +3,6 @@
 from django.test import TestCase
 
 from apps.accounts.models import User
-from apps.logs.models import OperationLog
 from apps.logs.services.logger import log_operation
 
 

@@ -7,11 +7,11 @@
 不删除数据库中已存在但注册表里没有的权限码,避免误删被角色引用的记录。
 """
 
-from core.permissions import PERMISSION_REGISTRY
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
 from apps.accounts.models import Permission
+from core.permissions import PERMISSION_REGISTRY
 
 
 class Command(BaseCommand):

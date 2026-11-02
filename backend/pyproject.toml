@@ -12,3 +12,10 @@ dependencies = [
     "python-dotenv>=1.2.4",
     "redis>=8.1.0",
 ]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.17.3",
+]
+[tool.ruff]
+exclude = ["*/migrations/*"]

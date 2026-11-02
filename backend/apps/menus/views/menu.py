@@ -1,11 +1,11 @@
 """菜单视图。"""
 
-from core.responses import success
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 
 from apps.menus.models import Menu
 from apps.menus.serializers.menu import MenuTreeSerializer
+from core.responses import success
 
 
 def _build_menu_tree(menus, perm_set, is_superuser):

@@ -4,13 +4,13 @@
 签发 JWT(包含用户、门店及角色上下文),返回统一响应.
 """
 
-from core.responses import success
 from rest_framework.permissions import AllowAny
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.accounts.serializers.login import LoginSerializer
+from core.responses import success
 
 
 class LoginView(APIView):

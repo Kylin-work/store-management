@@ -5,12 +5,12 @@
 认证通过后,将用户、门店及角色信息交给视图层签发 JWT。
 """
 
-from core.codes import BizCode
-from core.exceptions import BizException
 from django.contrib.auth import authenticate
 from rest_framework import serializers
 
 from apps.accounts.models import UserStoreRole
+from core.codes import BizCode
+from core.exceptions import BizException
 
 
 class LoginSerializer(serializers.Serializer):
