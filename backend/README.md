@@ -167,11 +167,14 @@ uv run python manage.py runserver
 - GET/PATCH /api/v1/members/<pk>/ 详情、编辑
 - POST /api/v1/members/<pk>/recharge/ 充值（事务内改余额、写记录、写日志）
 - PATCH /api/v1/members/<pk>/level/ 等级调整（仅店长）
+- PATCH /api/v1/members/<pk>/points/ 积分调整（仅店长）
 
 ### 商品
 
 - GET/POST /api/v1/products/ 列表、创建
 - GET/PATCH/DELETE /api/v1/products/<pk>/ 详情、编辑、软删除
+
+- PATCH /api/v1/products/<pk>/stock/ 库存调整（仅店长）
 
 cost 字段对无 product:edit_cost 权限的用户隐藏。
 
@@ -179,7 +182,7 @@ cost 字段对无 product:edit_cost 权限的用户隐藏。
 
 - GET/POST /api/v1/transactions/ 列表、收银（扣库存、算积分）
 - GET /api/v1/transactions/<pk>/ 详情（店员只能看自己经手的）
-- POST /api/v1/transactions/<pk>/refund/ 全额退款（仅店长，回滚库存、扣回积分）
+- POST /api/v1/transactions/<pk>/refund/ 退款（仅店长，支持全额和部分退款，回滚库存、按比例扣积分）
 
 ### 数据看板（仅店长）
 
