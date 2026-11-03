@@ -9,19 +9,9 @@ from apps.transactions.views.transaction import (
 )
 
 urlpatterns = [
+    path("", TransactionListCreateView.as_view(), name="transaction-list"),
+    path("<int:pk>/", TransactionDetailView.as_view(), name="transaction-detail"),
     path(
-        "transactions/",
-        TransactionListCreateView.as_view(),
-        name="transaction-list",
-    ),
-    path(
-        "transactions/<int:pk>/",
-        TransactionDetailView.as_view(),
-        name="transaction-detail",
-    ),
-    path(
-        "transactions/<int:pk>/refund/",
-        TransactionRefundView.as_view(),
-        name="transaction-refund",
+        "<int:pk>/refund/", TransactionRefundView.as_view(), name="transaction-refund"
     ),
 ]

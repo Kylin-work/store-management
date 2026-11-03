@@ -1,0 +1,25 @@
+# 环境变量和密钥
+.env
+.env.*
+!.env.example
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+
+# 测试和代码检查缓存
+.pytest_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Git 和 IDE
+.git/
+.vscode/
+.idea/
+
+# 临时文件
+*.log
+.DS_Store

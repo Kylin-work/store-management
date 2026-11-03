@@ -10,23 +10,17 @@ from apps.dashboard.views.overview import (
 )
 
 urlpatterns = [
+    path("summary/", DashboardSummaryView.as_view(), name="dashboard-summary"),
     path(
-        "dashboard/summary/",
-        DashboardSummaryView.as_view(),
-        name="dashboard-summary",
-    ),
-    path(
-        "dashboard/top-products/",
+        "top-products/",
         DashboardTopProductsView.as_view(),
         name="dashboard-top-products",
     ),
     path(
-        "dashboard/top-members/",
-        DashboardTopMembersView.as_view(),
-        name="dashboard-top-members",
+        "top-members/", DashboardTopMembersView.as_view(), name="dashboard-top-members"
     ),
     path(
-        "dashboard/transaction-trend/",
+        "transaction-trend/",
         DashboardTransactionTrendView.as_view(),
         name="dashboard-transaction-trend",
     ),

@@ -11,20 +11,14 @@ from apps.members.views.member import (
 )
 
 urlpatterns = [
-    path("members/", MemberListCreateView.as_view(), name="member-list"),
-    path("members/<int:pk>/", MemberDetailView.as_view(), name="member-detail"),
+    path("", MemberListCreateView.as_view(), name="member-list"),
+    path("<int:pk>/", MemberDetailView.as_view(), name="member-detail"),
+    path("<int:pk>/recharge/", MemberRechargeView.as_view(), name="member-recharge"),
     path(
-        "members/<int:pk>/recharge/",
-        MemberRechargeView.as_view(),
-        name="member-recharge",
+        "<int:pk>/level/", MemberChangeLevelView.as_view(), name="member-change-level"
     ),
     path(
-        "members/<int:pk>/level/",
-        MemberChangeLevelView.as_view(),
-        name="member-change-level",
-    ),
-    path(
-        "members/<int:pk>/points/",
+        "<int:pk>/points/",
         MemberAdjustPointsView.as_view(),
         name="member-adjust-points",
     ),

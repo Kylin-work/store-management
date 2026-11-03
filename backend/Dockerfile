@@ -1,12 +1,14 @@
-FROM python:3.12-slim
+# ============================================================
+# 第一阶段：构建依赖
+# ============================================================
+FROM python:3.12-slim AS builder
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    UV_SYSTEM_PYTHON=1
+    PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-# 系统依赖: mysqlclient 编译需要
+# 安装编译依赖
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     default-libmysqlclient-dev \
@@ -16,16 +18,40 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # 安装 uv
 RUN pip install --no-cache-dir uv
 
-# 先复制依赖清单, 利用 Docker 缓存
+# 复制依赖清单并安装生产依赖
 COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev
 
-# 复制源码
-COPY . .
+# ============================================================
+# 第二阶段：生产运行环境
+# ============================================================
+FROM python:3.12-slim AS runtime
 
-# 收集静态文件 (管理后台用, 虽然纯 API 项目不常用)
-RUN uv run python manage.py collectstatic --noinput || true
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+WORKDIR /app
+
+# 安装 MySQL 运行时动态库
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libmariadb3 \
+    && rm -rf /var/lib/apt/lists/*
+
+# 创建非 root 用户
+RUN useradd --create-home --shell /usr/sbin/nologin app
+
+# 复制 uv
+COPY --from=builder /usr/local /usr/local
+
+# 复制 Python 虚拟环境并设置权限
+COPY --from=builder --chown=app:app /app/.venv /app/.venv
+
+# 复制项目源码
+COPY --chown=app:app . .
 
 EXPOSE 8000
+
+# 使用非 root 用户运行
+USER app
 
 CMD ["uv", "run", "gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3"]

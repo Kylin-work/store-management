@@ -1,16 +1,16 @@
 """项目根路由."""
 
-from django.contrib import admin
 from django.urls import include, path
 
 urlpatterns = [
-    path("admin/", admin.site.urls),
+    # 认证、账号、角色与权限
     path("api/v1/", include("apps.accounts.urls")),
-    path("api/v1/", include("apps.stores.urls")),
-    path("api/v1/", include("apps.menus.urls")),
-    path("api/v1/", include("apps.logs.urls")),
-    path("api/v1/", include("apps.members.urls")),
-    path("api/v1/", include("apps.products.urls")),
-    path("api/v1/", include("apps.transactions.urls")),
-    path("api/v1/", include("apps.dashboard.urls")),
+    # 业务模块
+    path("api/v1/stores/", include("apps.stores.urls")),
+    path("api/v1/menus/", include("apps.menus.urls")),
+    path("api/v1/operation-logs/", include("apps.logs.urls")),
+    path("api/v1/members/", include("apps.members.urls")),
+    path("api/v1/products/", include("apps.products.urls")),
+    path("api/v1/transactions/", include("apps.transactions.urls")),
+    path("api/v1/dashboard/", include("apps.dashboard.urls")),
 ]

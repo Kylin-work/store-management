@@ -9,11 +9,9 @@ from apps.products.views.product import (
 )
 
 urlpatterns = [
-    path("products/", ProductListCreateView.as_view(), name="product-list"),
-    path("products/<int:pk>/", ProductDetailView.as_view(), name="product-detail"),
+    path("", ProductListCreateView.as_view(), name="product-list"),
+    path("<int:pk>/", ProductDetailView.as_view(), name="product-detail"),
     path(
-        "products/<int:pk>/stock/",
-        ProductAdjustStockView.as_view(),
-        name="product-adjust-stock",
+        "<int:pk>/stock/", ProductAdjustStockView.as_view(), name="product-adjust-stock"
     ),
 ]
