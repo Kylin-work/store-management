@@ -180,4 +180,3 @@ def create_transaction(
         )
 
         return tx
-

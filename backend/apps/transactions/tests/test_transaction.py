@@ -13,6 +13,7 @@ from apps.logs.models import OperationLog
 from apps.members.models import Member
 from apps.products.models import Product
 from apps.stores.models import Store
+from apps.transactions.models import Transaction, TransactionItem
 
 
 class TransactionTestBase(APITestCase):
@@ -36,9 +37,7 @@ class TransactionTestBase(APITestCase):
 
         # 权限码
         self.perms = {
-            code: Permission.objects.create(
-                code=code, name=code, module="transaction"
-            )
+            code: Permission.objects.create(code=code, name=code, module="transaction")
             for code in (
                 "transaction:list",
                 "transaction:create",
@@ -105,9 +104,7 @@ class TransactionTestBase(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
 
     def _auth_staff(self):
-        token = self._make_token(
-            self.staff, store_id=self.store.pk, role_code="staff"
-        )
+        token = self._make_token(self.staff, store_id=self.store.pk, role_code="staff")
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
 
     def _create_transaction_payload(self, **overrides):
@@ -164,6 +161,29 @@ class TransactionCreateTest(TransactionTestBase):
         # 积分增加
         self.member.refresh_from_db()
         self.assertEqual(self.member.points, 100)
+
+    @patch(
+        "apps.transactions.services.create_transaction.log_operation",
+        side_effect=RuntimeError("日志写入失败"),
+    )
+    def test_create_rollback_when_log_fails(self, mock_log):
+        """操作日志写入失败时, 交易、库存和积分全部回滚."""
+        response = self.client.post(
+            reverse("transaction-list"),
+            self._create_transaction_payload(member_id=self.member.pk),
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
+        mock_log.assert_called_once()
+
+        self.assertEqual(Transaction.objects.filter(store=self.store).count(), 0)
+
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.stock, 100)
+
+        self.member.refresh_from_db()
+        self.assertEqual(self.member.points, 0)
 
     def test_create_without_member(self):
         """散客交易, 不关联会员, 不加积分."""
@@ -415,9 +435,7 @@ class TransactionPartialRefundTest(TransactionTestBase):
     def test_partial_refund(self):
         """退 1 件, 状态变为部分退款, 库存加 1, 积分按比例扣."""
         self._auth_manager()
-        response = self._partial_refund(
-            [{"item_id": self.item_id, "quantity": 1}]
-        )
+        response = self._partial_refund([{"item_id": self.item_id, "quantity": 1}])
         data = self.assert_success(response)
         self.assertEqual(data["status"], "partial_refunded")
 
@@ -452,9 +470,7 @@ class TransactionPartialRefundTest(TransactionTestBase):
     def test_refund_exceed_remaining(self):
         """退款数量超过剩余可退数量被拒."""
         self._auth_manager()
-        response = self._partial_refund(
-            [{"item_id": self.item_id, "quantity": 4}]
-        )
+        response = self._partial_refund([{"item_id": self.item_id, "quantity": 4}])
         self.assert_failed(response, status.HTTP_400_BAD_REQUEST, expected_code=10001)
 
     def test_refund_invalid_item(self):
@@ -466,9 +482,7 @@ class TransactionPartialRefundTest(TransactionTestBase):
     def test_refund_zero_quantity(self):
         """退款数量为 0 被序列化器拦截."""
         self._auth_manager()
-        response = self._partial_refund(
-            [{"item_id": self.item_id, "quantity": 0}]
-        )
+        response = self._partial_refund([{"item_id": self.item_id, "quantity": 0}])
         self.assert_failed(response, status.HTTP_400_BAD_REQUEST, expected_code=10001)
 
     def test_refund_after_full_refund(self):
@@ -478,9 +492,7 @@ class TransactionPartialRefundTest(TransactionTestBase):
         self._partial_refund([{"item_id": self.item_id, "quantity": 3}])
 
         # 再退
-        response = self._partial_refund(
-            [{"item_id": self.item_id, "quantity": 1}]
-        )
+        response = self._partial_refund([{"item_id": self.item_id, "quantity": 1}])
         self.assert_failed(response, status.HTTP_400_BAD_REQUEST, expected_code=60002)
 
     def test_partial_refund_log(self):
@@ -501,3 +513,35 @@ class TransactionPartialRefundTest(TransactionTestBase):
             log.detail["items"],
             [{"item_id": self.item_id, "quantity": 1}],
         )
+
+    @patch(
+        "apps.transactions.services.refund_transaction.log_operation",
+        side_effect=RuntimeError("日志写入失败"),
+    )
+    def test_refund_rollback_when_log_fails(self, mock_log):
+        """退款日志写入失败时, 退款相关数据全部回滚."""
+        self._auth_manager()
+
+        response = self._partial_refund([{"item_id": self.item_id, "quantity": 1}])
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+        mock_log.assert_called_once()
+
+        # 库存回滚
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.stock, 97)
+
+        # 会员积分回滚
+        self.member.refresh_from_db()
+        self.assertEqual(self.member.points, 150)
+
+        # 明细退款数量回滚
+        item = TransactionItem.objects.get(pk=self.item_id)
+        self.assertEqual(item.refunded_quantity, 0)
+
+        # 交易状态回滚
+        tx = Transaction.objects.get(pk=self.tx_id)
+        self.assertEqual(tx.status, "completed")

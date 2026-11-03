@@ -88,4 +88,3 @@ class Transaction(models.Model):
 
     def __str__(self):
         return f"{self.store_id}-{self.pk}-{self.total_amount}"
-

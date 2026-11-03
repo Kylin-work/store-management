@@ -23,6 +23,7 @@ from core.responses import success
 # 权限类
 # ---------------------------------------------------------------------------
 
+
 class CanListTransaction(HasPerm):
     """交易列表及详情权限."""
 
@@ -44,6 +45,7 @@ class CanRefundTransaction(HasPerm):
 # ---------------------------------------------------------------------------
 # 公共方法
 # ---------------------------------------------------------------------------
+
 
 def _get_store_id(request) -> int:
     """从请求上下文获取当前门店 ID."""
@@ -90,15 +92,14 @@ def _get_transaction(pk: int, store_id: int, request, *, for_update: bool = Fals
 # 交易列表与创建
 # ---------------------------------------------------------------------------
 
+
 class TransactionListCreateView(APIView):
     """交易列表与收银."""
 
     def get_permissions(self):
         """按方法挂权限码."""
         permission_class = (
-            CanListTransaction
-            if self.request.method == "GET"
-            else CanCreateTransaction
+            CanListTransaction if self.request.method == "GET" else CanCreateTransaction
         )
         return [IsAuthenticated(), permission_class()]
 
@@ -111,9 +112,7 @@ class TransactionListCreateView(APIView):
         if not _is_manager(request):
             queryset = queryset.filter(staff=request.user)
 
-        queryset = queryset.prefetch_related("items__product").order_by(
-            "-created_at"
-        )
+        queryset = queryset.prefetch_related("items__product").order_by("-created_at")
 
         paginator = StandardPagination()
         page = paginator.paginate_queryset(queryset, request)
@@ -161,6 +160,7 @@ class TransactionListCreateView(APIView):
 # 交易详情
 # ---------------------------------------------------------------------------
 
+
 class TransactionDetailView(APIView):
     """交易详情."""
 
@@ -197,6 +197,7 @@ class TransactionDetailView(APIView):
 # ---------------------------------------------------------------------------
 # 交易退款
 # ---------------------------------------------------------------------------
+
 
 class TransactionRefundView(APIView):
     """交易退款, 仅店长."""

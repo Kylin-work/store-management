@@ -90,8 +90,6 @@ class TransactionCreateSerializer(serializers.Serializer):
         return value
 
 
-
-
 class TransactionRefundItemSerializer(serializers.Serializer):
     """退款明细项."""
 

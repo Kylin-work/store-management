@@ -137,9 +137,7 @@ def refund_transaction(
                 member.save(update_fields=("points", "updated_at"))
 
         # 更新交易状态
-        all_refunded = all(
-            item.refunded_quantity >= item.quantity for item in tx_items
-        )
+        all_refunded = all(item.refunded_quantity >= item.quantity for item in tx_items)
         if all_refunded:
             tx.status = TransactionStatus.REFUNDED
         else:
