@@ -221,6 +221,23 @@ class StoreManageCrudTest(StoreManageTestBase):
             "改名门店",
         )
 
+    def test_update_empty_data(self):
+        """禁止空更新门店."""
+        self._authenticate_admin()
+        url = reverse(
+            "store-manage-detail",
+            kwargs={"pk": self.store.pk},
+        )
+
+        response = self.client.patch(
+            url,
+            {},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data["code"], 10001)
+
     def test_disable_store(self):
         """停用门店."""
         url = reverse(

@@ -55,6 +55,13 @@ class StoreManageSerializer(serializers.ModelSerializer):
             },
         }
 
+    def validate(self, attrs):
+        """禁止空更新."""
+        if not attrs:
+            raise serializers.ValidationError("至少提供一个需要修改的字段")
+
+        return attrs
+
     def validate_code(self, value):
         """门店编码唯一性校验,统一转大写."""
 
