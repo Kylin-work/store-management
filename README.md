@@ -1,5 +1,13 @@
 # 门店会员管理系统
 
+![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)
+![Django](https://img.shields.io/badge/Django-5.2-092E20?logo=django&logoColor=white)
+![DRF](https://img.shields.io/badge/DRF-3.16-A30000)
+![MySQL](https://img.shields.io/badge/MySQL-8.4-4479A1?logo=mysql&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
+![uv](https://img.shields.io/badge/Package_Manager-uv-DE5FE9)
+![Ruff](https://img.shields.io/badge/Code_Style-Ruff-D7FF64?logo=ruff&logoColor=black)
+
 一个基于 Django REST Framework 的多门店会员管理系统，采用前后端分离架构，支持门店管理、角色权限、会员管理、商品管理、交易收银、数据看板及操作审计。
 
 > **项目状态：** 后端业务功能已完成，Docker 部署配置已完成，本地部署验收通过。前端与 CI 尚未开始。
