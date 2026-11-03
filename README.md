@@ -1,5 +1,5 @@
 # 门店会员管理系统
-
+[![CI](https://github.com/Kylin-work/store-management/actions/workflows/ci.yml/badge.svg)](https://github.com/Kylin-work/store-management/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)
 ![Django](https://img.shields.io/badge/Django-5.2-092E20?logo=django&logoColor=white)
 ![DRF](https://img.shields.io/badge/DRF-3.16-A30000)
