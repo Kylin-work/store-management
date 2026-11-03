@@ -1,250 +1,419 @@
-# 门店会员管理系统 - 后端
+# 门店会员管理系统 - 后端开发文档
 
-多门店会员管理后端系统，支持按门店分角色的权限体系、会员、商品、交易、看板、操作审计。
+本文档用于说明 Django 后端的环境配置、运行方式、Docker 部署、API 接口及代码质量检查。
 
-## 技术栈
+项目整体介绍和系统架构见根目录 `README.md`。
 
-- 后端：Django 5.2 LTS + Django REST Framework
-- 认证：JWT（djangorestframework-simplejwt）
-- 数据库：MySQL 8.4
-- 缓存：Redis（预留）
-- 依赖管理：uv
-- 代码质量：Ruff + coverage + pip-audit
+## 一、技术栈
 
-## 权限设计
+| 分类 | 技术 |
+|---|---|
+| Python | 3.12+ |
+| Web 框架 | Django 5.2 |
+| API 框架 | Django REST Framework |
+| 身份认证 | SimpleJWT |
+| 数据库 | MySQL 8.4 |
+| 缓存服务 | Redis 7 |
+| 包管理 | uv |
+| Web 服务 | Gunicorn |
+| 测试 | pytest |
+| 代码检查 | Ruff |
 
-系统的核心是按门店分角色的权限模型。
+版本约束：
 
-### 角色与门店
+- Django >= 5.2, < 5.3
+- djangorestframework >= 3.16, < 4
+- djangorestframework-simplejwt >= 5.5, < 6
+- Python >= 3.12
 
-一个用户在系统里只有一个账号（工号 + 密码），但在不同门店可以有不同角色。登录时选择门店，本次会话的权限由该门店下的角色决定。
+## 二、目录结构
 
-- Store：门店
-- Role：角色，可动态扩展，权限码存数据库
-- UserStoreRole：用户-门店-角色三列关联，(user, store) 唯一
-
-### 权限码
-
-格式 模块:动作，如 member:recharge、product:edit_cost。
-
-- 权限码由各业务模块在 apps.py 里声明，sync_permissions 命令同步到 Permission 表
-- 角色和权限码通过 M2M 关联
-- 菜单可见性、接口权限、前端按钮判断共用同一套权限码
-
-### 四道校验
-
-- 数据隔离：ViewSet 的 get_queryset / 查询条件，回答能看到哪些数据（按门店过滤）
-- 接口级权限：HasPerm 子类，回答这个角色能否调用这个接口
-- 对象级权限：视图内的归属校验，回答能否操作这条具体数据
-- 字段级可见性：序列化器 __init__ 动态移除字段，回答不同角色看到哪些字段
-
-### 认证流程
-
-1. GET /api/v1/stores/ 获取门店列表（公开）
-2. POST /api/v1/auth/login/ 传工号、密码、门店 ID，返回 JWT
-3. JWT payload 带 user_id、store_id、role_code
-4. 后续请求由 StoreJWTAuthentication 校验 token 里的门店角色是否仍有效，加载权限码集合挂到 request.perm_set
-5. 权限变更后，旧 token 立即失效
-
-平台管理员（is_superuser）不绑定门店，权限全放行，但访问业务接口（会员、商品、交易）会因无门店上下文返回 403。
-
-## 项目结构
-
-```
+```text
 backend/
-├── config/
-├── core/
 ├── apps/
-│   ├── accounts/
-│   ├── stores/
-│   ├── members/
-│   ├── products/
-│   ├── transactions/
-│   ├── dashboard/
-│   ├── menus/
-│   └── logs/
+│   ├── accounts/        # 用户、角色、权限及认证
+│   ├── stores/          # 门店管理
+│   ├── members/         # 会员、充值及积分
+│   ├── products/        # 商品及库存
+│   ├── transactions/    # 交易及退款
+│   ├── dashboard/       # 数据看板
+│   ├── menus/           # 菜单
+│   └── logs/             # 操作日志
+├── config/
+│   └── settings/
+│       ├── base.py      # 公共配置
+│       ├── dev.py       # 开发环境
+│       └── prod.py      # 生产环境
+├── core/                # 公共业务基础设施
 ├── manage.py
+├── Dockerfile
 ├── pyproject.toml
 └── uv.lock
 ```
 
-## 快速开始
+## 三、本地开发环境
 
-### 环境要求
+### 3.1 环境要求
 
 - Python 3.12+
-- MySQL 8.4
 - uv
+- MySQL 8.4
 
-### 1. 安装依赖
+### 3.2 安装依赖
+
+在 backend 目录执行：
 
 ```bash
-cd backend
 uv sync
 ```
 
-### 2. 配置数据库
+### 3.3 配置环境变量
 
-创建 MySQL 数据库和用户：
+本地直接运行 Django 时，可以在 `backend/.env` 中配置：
 
-```sql
-CREATE DATABASE store_management DEFAULT CHARSET utf8mb4 COLLATE utf8mb4_unicode_ci;
-CREATE USER 'dj'@'localhost' IDENTIFIED BY '你的密码';
-GRANT ALL PRIVILEGES ON store_management.* TO 'dj'@'localhost';
-```
-
-导入 MySQL 时区表（看板趋势接口依赖，不导入会报 Are time zone definitions for your database installed?）：
-
-```bash
-sudo mysql_tzinfo_to_sql /usr/share/zoneinfo | sudo mysql -u root -p mysql
-```
-
-在 backend/.env 里配置：
-
-```bash
+```dotenv
+DJANGO_SECRET_KEY=本地开发密钥
 DB_NAME=store_management
 DB_USER=dj
-DB_PASSWORD=你的密码
+DB_PASSWORD=数据库密码
 DB_HOST=127.0.0.1
 DB_PORT=3306
 ```
-如果使用 Docker Compose 部署，宿主机映射端口为 13306（MySQL）、16379（Redis）、18000（后端）。容器内部通信仍走默认端口，DB_HOST=db、DB_PORT=3306 无需修改。宿主机用客户端连容器 MySQL 时写 127.0.0.1:13306。
 
-### 3. 迁移和初始化
+`base.py` 会通过 `python-dotenv` 加载 `backend/.env`。
+
+### 3.4 数据库准备
+
+确保 MySQL 已创建数据库及对应用户。
+
+示例 SQL：
+
+```sql
+CREATE DATABASE store_management
+DEFAULT CHARSET utf8mb4
+COLLATE utf8mb4_unicode_ci;
+
+CREATE USER 'dj'@'localhost'
+IDENTIFIED BY '你的密码';
+
+GRANT ALL PRIVILEGES ON store_management.*
+TO 'dj'@'localhost';
+```
+
+如果使用 Docker Compose 部署，不需要另外执行上述数据库创建操作，MySQL 容器首次初始化时会根据环境变量创建数据库及用户。
+
+### 3.5 数据库迁移
 
 ```bash
 uv run python manage.py migrate
+```
+
+### 3.6 权限码同步
+
+```bash
 uv run python manage.py sync_permissions
 ```
 
-### 4. 创建超级管理员
+### 3.7 创建超级管理员
 
 ```bash
 uv run python manage.py createsuperuser
 ```
 
-依次输入工号、手机号、姓名、密码。
-创建后需要修复工号序列，避免后续创建普通用户时工号冲突：
-```bash
-uv run python manage.py fix_sequence
+按照提示输入工号、手机号、姓名和密码。
+
+## 四、Docker 部署
+
+Docker Compose 文件位于项目根目录，而不是 backend 目录。
+
+### 4.1 环境变量配置
+
+在项目根目录创建 `.env`，主要配置：
+
+```dotenv
+DJANGO_SECRET_KEY=强随机密钥
+DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1
+
+MYSQL_ROOT_PASSWORD=MySQL管理员密码
+
+DB_NAME=store_management
+DB_USER=dj
+DB_PASSWORD=应用数据库密码
 ```
 
-### 5. 启动服务
+其他生产安全配置可以根据实际需求配置，具体以 `.env.example` 和 `docker-compose.yml` 为准。
+
+注意：
+
+- 根目录 `.env` 由 Docker Compose 读取。
+- `backend/.env` 由 Django 的 `load_dotenv()` 加载。
+- 两者用途不同。
+- 真实密钥和密码不得提交到 Git。
+
+### 4.2 构建并启动
+
+在项目根目录执行：
 
 ```bash
-uv run python manage.py runserver
+docker compose up -d --build
 ```
 
-## API 概览
-
-### 公开接口
-
-- GET /api/v1/stores/ 门店列表（登录页选门店）
-- POST /api/v1/auth/login/ 登录
-
-### 认证接口
-
-- GET /api/v1/auth/me/ 当前用户信息、门店上下文、权限码
-- GET /api/v1/menus/ 当前用户可见菜单树
-
-### 门店管理（平台管理员）
-
-- GET/POST /api/v1/stores/manage/ 列表、创建
-- GET/PUT/PATCH /api/v1/stores/manage/<id>/ 详情、编辑
-- PATCH /api/v1/stores/manage/<id>/status/ 启用/停用
-
-### 账号管理
-
-- GET/POST /api/v1/accounts/ 列表、创建（工号自动生成）
-- GET/PATCH /api/v1/accounts/<employee_code>/ 详情、编辑
-- PATCH /api/v1/accounts/<employee_code>/status/ 启用/停用
-- PUT /api/v1/accounts/<employee_code>/store-roles/ 门店角色全量替换
-
-### 角色与权限码
-
-- GET/POST /api/v1/roles/ 列表、创建
-- GET/PATCH /api/v1/roles/<code>/ 详情、编辑（含权限分配）
-- GET /api/v1/permissions/ 权限码列表（按模块分组）
-
-### 会员
-
-- GET/POST /api/v1/members/ 列表、创建
-- GET/PATCH /api/v1/members/<pk>/ 详情、编辑
-- POST /api/v1/members/<pk>/recharge/ 充值（事务内改余额、写记录、写日志）
-- PATCH /api/v1/members/<pk>/level/ 等级调整（仅店长）
-- PATCH /api/v1/members/<pk>/points/ 积分调整（仅店长）
-
-### 商品
-
-- GET/POST /api/v1/products/ 列表、创建
-- GET/PATCH/DELETE /api/v1/products/<pk>/ 详情、编辑、软删除
-
-- PATCH /api/v1/products/<pk>/stock/ 库存调整（仅店长）
-
-cost 字段对无 product:edit_cost 权限的用户隐藏。
-
-### 交易
-
-- GET/POST /api/v1/transactions/ 列表、收银（扣库存、算积分）
-- GET /api/v1/transactions/<pk>/ 详情（店员只能看自己经手的）
-- POST /api/v1/transactions/<pk>/refund/ 退款（仅店长，支持全额和部分退款，回滚库存、按比例扣积分）
-
-### 数据看板（仅店长）
-
-- GET /api/v1/dashboard/summary/ 今日概览
-- GET /api/v1/dashboard/top-products/ 热销商品排行
-- GET /api/v1/dashboard/top-members/ 会员消费排行
-- GET /api/v1/dashboard/transaction-trend/ 交易趋势（?days=7，支持 1-30）
-
-### 操作日志（平台管理员）
-
-- GET /api/v1/operation-logs/ 日志列表，支持 module/action/user_employee_code/start_time/end_time 筛选
-
-## 统一响应格式
-
-成功：{"code": 0, "message": "ok", "data": {...}}
-
-错误：{"code": 10001, "message": "参数校验失败", "data": {"phone": ["手机号已存在"]}}
-
-## 工号生成
-
-- 8 位纯数字，全局自增，如 00000001
-- 创建用户时在事务内锁定 Sequence 行、加一、格式化
-- 序列行由 data migration 预置，手动指定工号时不消耗序列
-- 所有用户由后台管理员创建，不开放注册
-
-## 操作日志
-
-敏感操作通过 log_operation() 显式记录。
-
-- 日志模型禁止 update/delete，审计日志不可篡改
-- 平台管理员专属查询
-- 记录业务语义的变更详情（detail JSON 字段）
-
-## 测试
+### 4.3 查看服务状态
 
 ```bash
-cd backend
-uv run python manage.py test -v 1
+docker compose ps
 ```
 
-当前 178 个测试，覆盖率 98%。
+### 4.4 查看后端日志
 
 ```bash
-uv run coverage run manage.py test
-uv run coverage report -m
+docker compose logs backend
 ```
 
-## 代码质量
+### 4.5 查看数据库日志
+
+```bash
+docker compose logs db
+```
+
+### 4.6 进入后端容器
+
+```bash
+docker compose exec backend sh
+```
+
+### 4.7 容器启动流程
+
+后端容器启动时自动执行：
+
+1. Django 数据库迁移。
+2. 权限码同步。
+3. Gunicorn 启动。
+
+MySQL 首次初始化时会执行 `docker/mysql/init/` 中的初始化脚本。
+
+### 4.8 本地连接地址
+
+| 服务 | 地址 |
+|---|---|
+| Django API | `http://127.0.0.1:18000` |
+| MySQL | `127.0.0.1:13306` |
+| Redis | `127.0.0.1:16379` |
+
+容器之间使用 Compose 服务名通信：
+
+- MySQL：`db:3306`
+- Redis：`redis:6379`
+
+宿主机访问容器服务时使用映射端口。
+
+### 4.9 停止服务
+
+```bash
+docker compose down
+```
+
+此操作默认不会删除持久化数据卷。
+
+不要随意使用 `docker compose down -v`，该命令会删除 Compose 管理的数据卷。
+
+## 五、API 接口清单
+
+统一 API 前缀：
+
+`/api/v1/`
+
+### 5.1 认证
+
+| 方法   | 路径                    | 说明       |
+| ---- | --------------------- | -------- |
+| POST | `/api/v1/auth/login/` | 用户登录     |
+| GET  | `/api/v1/auth/me/`    | 获取当前用户信息 |
+
+### 5.2 门店
+
+| 方法                | 路径                                   | 说明        |
+| ----------------- | ------------------------------------ | --------- |
+| GET               | `/api/v1/stores/`                    | 获取门店选项列表  |
+| GET / POST        | `/api/v1/stores/manage/`             | 门店管理列表、创建 |
+| GET / PUT / PATCH | `/api/v1/stores/manage/<pk>/`        | 门店详情、编辑   |
+| PATCH             | `/api/v1/stores/manage/<pk>/status/` | 门店启用、停用   |
+
+### 5.3 菜单
+
+| 方法  | 路径               | 说明         |
+| --- | ---------------- | ---------- |
+| GET | `/api/v1/menus/` | 获取当前用户可见菜单 |
+
+### 5.4 账号管理
+
+| 方法                | 路径                                              | 说明        |
+| ----------------- | ----------------------------------------------- | --------- |
+| GET / POST        | `/api/v1/accounts/`                             | 账号列表、创建   |
+| GET / PUT / PATCH | `/api/v1/accounts/<employee_code>/`             | 账号详情、编辑   |
+| PATCH             | `/api/v1/accounts/<employee_code>/status/`      | 账号启用、停用   |
+| PUT               | `/api/v1/accounts/<employee_code>/store-roles/` | 替换账号的门店角色 |
+
+### 5.5 角色与权限
+
+| 方法                | 路径                      | 说明      |
+| ----------------- | ----------------------- | ------- |
+| GET / POST        | `/api/v1/roles/`        | 角色列表、创建 |
+| GET / PUT / PATCH | `/api/v1/roles/<code>/` | 角色详情、编辑 |
+| GET               | `/api/v1/permissions/`  | 获取权限码列表 |
+
+### 5.6 会员
+
+| 方法                | 路径                               | 说明      |
+| ----------------- | -------------------------------- | ------- |
+| GET / POST        | `/api/v1/members/`               | 会员列表、创建 |
+| GET / PUT / PATCH | `/api/v1/members/<pk>/`          | 会员详情、编辑 |
+| POST              | `/api/v1/members/<pk>/recharge/` | 会员充值    |
+| PATCH             | `/api/v1/members/<pk>/level/`    | 调整会员等级  |
+| PATCH             | `/api/v1/members/<pk>/points/`   | 调整会员积分  |
+
+### 5.7 商品
+
+| 方法                         | 路径                             | 说明          |
+| -------------------------- | ------------------------------ | ----------- |
+| GET / POST                 | `/api/v1/products/`            | 商品列表、创建     |
+| GET / PUT / PATCH / DELETE | `/api/v1/products/<pk>/`       | 商品详情、编辑、软删除 |
+| PATCH                      | `/api/v1/products/<pk>/stock/` | 调整商品库存      |
+
+成本价字段根据用户权限控制可见性。
+
+### 5.8 交易
+
+| 方法         | 路径                                  | 说明        |
+| ---------- | ----------------------------------- | --------- |
+| GET / POST | `/api/v1/transactions/`             | 交易列表、创建交易 |
+| GET        | `/api/v1/transactions/<pk>/`        | 交易详情      |
+| POST       | `/api/v1/transactions/<pk>/refund/` | 交易退款      |
+
+退款支持全额退款和部分退款。
+
+### 5.9 数据看板
+
+| 方法  | 路径                                     | 说明     |
+| --- | -------------------------------------- | ------ |
+| GET | `/api/v1/dashboard/summary/`           | 今日经营概览 |
+| GET | `/api/v1/dashboard/top-products/`      | 热销商品排行 |
+| GET | `/api/v1/dashboard/top-members/`       | 会员消费排行 |
+| GET | `/api/v1/dashboard/transaction-trend/` | 交易趋势   |
+
+### 5.10 操作日志
+
+| 方法  | 路径                        | 说明     |
+| --- | ------------------------- | ------ |
+| GET | `/api/v1/operation-logs/` | 操作日志列表 |
+
+支持按 `module`、`action`、`user_employee_code`、`start_time`、`end_time` 筛选。
+
+## 六、统一响应格式
+
+成功响应：
+
+```json
+{
+  "code": 0,
+  "message": "ok",
+  "data": {}
+}
+```
+
+错误响应：
+
+```json
+{
+  "code": 10001,
+  "message": "参数校验失败",
+  "data": {
+    "phone": ["手机号已存在"]
+  }
+}
+```
+
+列表响应：
+
+```json
+{
+  "items": [],
+  "total": 0,
+  "page": 1,
+  "page_size": 20
+}
+```
+
+## 七、测试
+
+在 backend 目录执行。
+
+运行全部测试：
+
+```bash
+uv run pytest
+```
+
+运行指定模块测试：
+
+```bash
+uv run pytest apps/products/tests/ -v
+```
+
+当前业务测试验收结果：
+
+- 235 passed
+- 3 subtests passed
+
+## 八、代码质量检查
+
+### 8.1 Ruff 代码检查
 
 ```bash
 uv run ruff check .
-uv run pip-audit
 ```
 
-## 版本约束
+### 8.2 Ruff 格式检查
 
-- Django >=5.2,<5.3
-- djangorestframework >=3.16,<4
-- djangorestframework-simplejwt >=5.5,<6
-- Python >=3.12
+```bash
+uv run ruff format --check .
+```
+
+### 8.3 Django 系统检查
+
+```bash
+uv run python manage.py check
+```
+
+### 8.4 生产环境配置检查
+
+```bash
+DJANGO_ALLOWED_HOSTS=localhost uv run python manage.py check --deploy --settings=config.settings.prod
+```
+
+### 8.5 数据库迁移检查
+
+```bash
+uv run python manage.py makemigrations --check --dry-run
+```
+
+## 九、环境配置说明
+
+项目 Settings 分为三个层次：
+
+| 文件 | 职责 |
+|---|---|
+| `config/settings/base.py` | 公共配置 |
+| `config/settings/dev.py` | 开发环境配置 |
+| `config/settings/prod.py` | 生产环境配置 |
+
+Docker Compose 当前使用：
+
+```text
+config.settings.prod
+```
+
+生产配置默认启用 HTTPS 强制跳转，并提供安全 Cookie、代理 HTTPS 识别及 HSTS 相关设置。
+
+目前尚未配置正式公网域名、反向代理及 HTTPS 证书，因此 HSTS 保持未启用状态。
+
