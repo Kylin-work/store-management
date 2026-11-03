@@ -178,6 +178,25 @@ class MemberCreateTest(MemberTestBase):
         self.assertEqual(data["balance"], "0.00")
         self.assertEqual(data["level"], "normal")
 
+    @patch(
+        "apps.members.views.member.log_operation",
+        side_effect=RuntimeError("日志写入失败"),
+    )
+    def test_create_rollback_when_log_fails(self, mock_log):
+        response = self.client.post(
+            reverse("member-list"),
+            {"name": "测试会员", "phone": "13800138099"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
+        self.assertFalse(
+            Member.objects.filter(
+                store=self.store,
+                phone="13800138099",
+            ).exists()
+        )
+
     def test_duplicate_phone_same_store(self):
         self._create_member(phone="13700000004")
         response = self.client.post(

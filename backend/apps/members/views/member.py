@@ -26,34 +26,47 @@ from core.responses import success
 # 权限类
 # ---------------------------------------------------------------------------
 
+
 class CanListMember(HasPerm):
     """会员列表及详情权限."""
+
     required_perm = "member:list"
+
 
 class CanCreateMember(HasPerm):
     """创建会员权限."""
+
     required_perm = "member:create"
+
 
 class CanUpdateMember(HasPerm):
     """编辑会员权限."""
+
     required_perm = "member:update"
+
 
 class CanRechargeMember(HasPerm):
     """会员充值权限."""
+
     required_perm = "member:recharge"
+
 
 class CanChangeLevel(HasPerm):
     """会员等级调整权限(仅店长)."""
+
     required_perm = "member:change_level"
+
 
 class CanAdjustPoints(HasPerm):
     """会员积分调整权限(仅店长)."""
+
     required_perm = "member:adjust_points"
 
 
 # ---------------------------------------------------------------------------
 # 公共方法
 # ---------------------------------------------------------------------------
+
 
 def _get_member(pk: int, store_id: int, *, for_update: bool = False) -> Member:
     """按主键和门店获取会员, 不存在时抛业务异常."""
@@ -86,6 +99,7 @@ def _get_store_id(request) -> int:
 # 会员列表与创建
 # ---------------------------------------------------------------------------
 
+
 class MemberListCreateView(APIView):
     """会员列表与创建."""
 
@@ -110,6 +124,7 @@ class MemberListCreateView(APIView):
             }
         )
 
+    @transaction.atomic
     def post(self, request):
         store_id = _get_store_id(request)
         serializer = MemberCreateSerializer(
@@ -118,16 +133,22 @@ class MemberListCreateView(APIView):
         serializer.is_valid(raise_exception=True)
         member = serializer.save()
         log_operation(
-            user=request.user, module="member", action="create",
-            target_type="Member", target_id=str(member.pk),
+            user=request.user,
+            module="member",
+            action="create",
+            target_type="Member",
+            target_id=str(member.pk),
             detail={"name": member.name, "phone": member.phone},
         )
-        return success(data=MemberListSerializer(member).data, http_status=status.HTTP_201_CREATED)
+        return success(
+            data=MemberListSerializer(member).data, http_status=status.HTTP_201_CREATED
+        )
 
 
 # ---------------------------------------------------------------------------
 # 会员详情与编辑
 # ---------------------------------------------------------------------------
+
 
 class MemberDetailView(APIView):
     """会员详情与编辑."""
@@ -153,8 +174,11 @@ class MemberDetailView(APIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         log_operation(
-            user=request.user, module="member", action="update",
-            target_type="Member", target_id=str(member.pk),
+            user=request.user,
+            module="member",
+            action="update",
+            target_type="Member",
+            target_id=str(member.pk),
             detail={"changed_fields": list(serializer.validated_data.keys())},
         )
         return success(data=MemberListSerializer(member).data)
@@ -163,6 +187,7 @@ class MemberDetailView(APIView):
 # ---------------------------------------------------------------------------
 # 会员充值
 # ---------------------------------------------------------------------------
+
 
 class MemberRechargeView(APIView):
     """会员充值."""
@@ -195,6 +220,7 @@ class MemberRechargeView(APIView):
 # 会员等级调整
 # ---------------------------------------------------------------------------
 
+
 class MemberChangeLevelView(APIView):
     """会员等级调整, 仅店长."""
 
@@ -210,8 +236,11 @@ class MemberChangeLevelView(APIView):
         member.level = serializer.validated_data["level"]
         member.save(update_fields=("level", "updated_at"))
         log_operation(
-            user=request.user, module="member", action="change_level",
-            target_type="Member", target_id=str(member.pk),
+            user=request.user,
+            module="member",
+            action="change_level",
+            target_type="Member",
+            target_id=str(member.pk),
             detail={"old_level": old_level, "new_level": member.level},
         )
         return success(data=MemberListSerializer(member).data)
@@ -220,6 +249,7 @@ class MemberChangeLevelView(APIView):
 # ---------------------------------------------------------------------------
 # 会员积分调整
 # ---------------------------------------------------------------------------
+
 
 class MemberAdjustPointsView(APIView):
     """会员积分调整, 仅店长."""
@@ -244,8 +274,11 @@ class MemberAdjustPointsView(APIView):
         member.points = new_points
         member.save(update_fields=("points", "updated_at"))
         log_operation(
-            user=request.user, module="member", action="adjust_points",
-            target_type="Member", target_id=str(member.pk),
+            user=request.user,
+            module="member",
+            action="adjust_points",
+            target_type="Member",
+            target_id=str(member.pk),
             detail={
                 "points_before": points_before,
                 "points_after": new_points,
