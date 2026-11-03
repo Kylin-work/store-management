@@ -1,6 +1,11 @@
 """项目根路由."""
 
 from django.urls import include, path
+from drf_spectacular.views import (
+    SpectacularAPIView,
+    SpectacularRedocView,
+    SpectacularSwaggerView,
+)
 
 urlpatterns = [
     # 认证、账号、角色与权限
@@ -13,4 +18,16 @@ urlpatterns = [
     path("api/v1/products/", include("apps.products.urls")),
     path("api/v1/transactions/", include("apps.transactions.urls")),
     path("api/v1/dashboard/", include("apps.dashboard.urls")),
+    # API 文档
+    path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
+    path(
+        "api/docs/",
+        SpectacularSwaggerView.as_view(url_name="schema"),
+        name="swagger-ui",
+    ),
+    path(
+        "api/redoc/",
+        SpectacularRedocView.as_view(url_name="schema"),
+        name="redoc",
+    ),
 ]

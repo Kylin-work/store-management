@@ -1,7 +1,8 @@
 """账号状态管理视图."""
 
 from django.db import transaction
-from rest_framework import status
+from drf_spectacular.utils import extend_schema
+from rest_framework import serializers, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 
@@ -13,11 +14,37 @@ from core.exceptions import BizException
 from core.responses import success
 
 
+class AccountStatusRequestSerializer(serializers.Serializer):
+    """账号状态修改请求."""
+
+    is_active = serializers.BooleanField(
+        label="是否启用",
+        help_text="true 表示启用，false 表示停用。",
+    )
+
+
+class AccountStatusResponseSerializer(serializers.Serializer):
+    """账号状态修改响应."""
+
+    employee_code = serializers.CharField(label="员工编号")
+    is_active = serializers.BooleanField(label="是否启用")
+
+
 class AccountStatusView(APIView):
     """账号启用/停用."""
 
     permission_classes = (IsAuthenticated, CanUpdateAccount)
 
+    @extend_schema(
+        operation_id="account_status_update",
+        summary="启用或停用账号",
+        description=(
+            "超级管理员修改账号的全局启用状态；"
+            "普通门店管理员修改账号在当前门店的任职状态。"
+        ),
+        request=AccountStatusRequestSerializer,
+        responses={200: AccountStatusResponseSerializer},
+    )
     @transaction.atomic
     def patch(self, request, employee_code):
         """切换全局账号或当前门店任职状态."""

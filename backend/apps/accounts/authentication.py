@@ -9,6 +9,7 @@
 """
 
 from django.core.exceptions import MultipleObjectsReturned
+from drf_spectacular.extensions import OpenApiAuthenticationExtension
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
@@ -85,3 +86,17 @@ class StoreJWTAuthentication(JWTAuthentication):
         request.perm_set = perm_set
 
         return result
+
+
+class StoreJWTAuthenticationScheme(OpenApiAuthenticationExtension):
+    """门店 JWT 认证的 OpenAPI 描述."""
+
+    target_class = "apps.accounts.authentication.StoreJWTAuthentication"
+    name = "BearerAuth"
+
+    def get_security_definition(self, auto_schema):
+        return {
+            "type": "http",
+            "scheme": "bearer",
+            "bearerFormat": "JWT",
+        }

@@ -1,6 +1,7 @@
 """账号管理视图."""
 
 from django.db import transaction
+from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
@@ -166,6 +167,12 @@ class AccountListCreateView(APIView):
         )
         return [IsAuthenticated(), permission_class()]
 
+    @extend_schema(
+        operation_id="account_list",
+        summary="账号列表",
+        description="分页查询账号。普通门店管理员只能查看当前门店的员工。",
+        responses={200: AccountListSerializer(many=True)},
+    )
     def get(self, request):
         """账号列表,分页."""
         queryset = _get_account_queryset()
@@ -198,6 +205,12 @@ class AccountListCreateView(APIView):
             }
         )
 
+    @extend_schema(
+        operation_id="account_create",
+        summary="创建账号",
+        request=AccountCreateSerializer,
+        responses={201: AccountListSerializer},
+    )
     @transaction.atomic
     def post(self, request):
         """创建账号,自动生成工号并分配门店角色."""
@@ -249,6 +262,11 @@ class AccountDetailView(APIView):
         )
         return [IsAuthenticated(), permission_class()]
 
+    @extend_schema(
+        operation_id="account_detail",
+        summary="账号详情",
+        responses={200: AccountListSerializer},
+    )
     def get(self, request, employee_code):
         """账号详情."""
         store_id = None if request.user.is_superuser else request.store_id
@@ -260,6 +278,12 @@ class AccountDetailView(APIView):
             ).data
         )
 
+    @extend_schema(
+        operation_id="account_update",
+        summary="编辑账号",
+        request=AccountUpdateSerializer,
+        responses={200: AccountListSerializer},
+    )
     @transaction.atomic
     def patch(self, request, employee_code):
         """编辑账号：手机号、姓名、密码."""

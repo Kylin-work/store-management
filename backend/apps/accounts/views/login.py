@@ -1,9 +1,10 @@
-"""
-登录视图:
+"""登录视图:
 调用 LoginSerializer 完成身份认证和门店权限校验,
 签发 JWT(包含用户、门店及角色上下文),返回统一响应.
 """
 
+from drf_spectacular.utils import extend_schema
+from rest_framework import serializers
 from rest_framework.permissions import AllowAny
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
@@ -11,6 +12,30 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.accounts.serializers.login import LoginSerializer
 from core.responses import success
+
+
+class LoginUserResponseSerializer(serializers.Serializer):
+    """登录用户信息."""
+
+    employee_code = serializers.CharField(label="工号")
+    real_name = serializers.CharField(label="姓名")
+    is_superuser = serializers.BooleanField(label="是否超级管理员")
+    store_id = serializers.IntegerField(
+        label="门店 ID",
+        allow_null=True,
+    )
+    role_code = serializers.CharField(
+        label="角色编码",
+        allow_null=True,
+    )
+
+
+class LoginResponseSerializer(serializers.Serializer):
+    """登录响应数据."""
+
+    access = serializers.CharField(label="Access Token")
+    refresh = serializers.CharField(label="Refresh Token")
+    user = LoginUserResponseSerializer(label="用户信息")
 
 
 class LoginView(APIView):
@@ -23,6 +48,17 @@ class LoginView(APIView):
     throttle_classes = (ScopedRateThrottle,)
     throttle_scope = "login"
 
+    @extend_schema(
+        operation_id="auth_login",
+        summary="用户登录",
+        description=(
+            "使用工号和密码登录。普通用户需要提供门店 ID；"
+            "平台超级管理员不需要选择门店。登录成功后返回 JWT。"
+        ),
+        request=LoginSerializer,
+        responses={200: LoginResponseSerializer},
+        auth=[],
+    )
     def post(self, request):
         # 1. 验证登录信息(身份认证 + 门店关联校验)
         serializer = LoginSerializer(data=request.data, context={"request": request})

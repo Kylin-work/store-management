@@ -1,7 +1,8 @@
 """账号门店角色管理视图."""
 
 from django.db import transaction
-from rest_framework import status
+from drf_spectacular.utils import extend_schema
+from rest_framework import serializers, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 
@@ -19,11 +20,42 @@ from core.exceptions import BizException
 from core.responses import success
 
 
+class StoreRoleItemRequestSerializer(serializers.Serializer):
+    """单个门店角色."""
+
+    store_id = serializers.IntegerField(
+        label="门店 ID",
+        min_value=1,
+    )
+    role_code = serializers.CharField(
+        label="角色编码",
+    )
+
+
+class AccountStoreRolesRequestSerializer(serializers.Serializer):
+    """账号门店角色调整请求."""
+
+    store_roles = StoreRoleItemRequestSerializer(
+        many=True,
+        label="门店角色列表",
+    )
+
+
 class AccountStoreRolesView(APIView):
     """账号门店角色调整."""
 
     permission_classes = (IsAuthenticated, CanUpdateAccount)
 
+    @extend_schema(
+        operation_id="account_store_roles_update",
+        summary="调整账号门店角色",
+        description=(
+            "替换账号的门店角色配置。超级管理员可以调整多个门店；"
+            "门店管理员只能调整当前门店的角色。"
+        ),
+        request=AccountStoreRolesRequestSerializer,
+        responses={200: AccountListSerializer},
+    )
     @transaction.atomic
     def put(self, request, employee_code):
         """调整账号的门店角色."""

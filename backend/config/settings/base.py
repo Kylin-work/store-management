@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     # 第三方
     "rest_framework",
     "corsheaders",
+    "drf_spectacular",
     # 业务(包建好后逐个取消注释)
     "apps.accounts",
     "apps.stores",
@@ -118,10 +119,16 @@ REST_FRAMEWORK = {
     "PAGE_SIZE": 20,
     "EXCEPTION_HANDLER": "core.exceptions.custom_exception_handler",
     "DEFAULT_THROTTLE_RATES": {
-        "login": "5/min",  # 登录接口每分钟最多 5 次
+        "login": "5/min",
     },
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
-
+SPECTACULAR_SETTINGS = {
+    "TITLE": "门店会员管理系统 API",
+    "DESCRIPTION": "门店会员管理系统后端 API 接口文档。",
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+}
 
 # ---------------------------------------------------------------------------
 # 国际化

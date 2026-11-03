@@ -2,7 +2,8 @@
 
 from django.db import transaction
 from django.db.models import Count
-from rest_framework import status
+from drf_spectacular.utils import extend_schema
+from rest_framework import serializers, status
 from rest_framework.permissions import BasePermission, IsAuthenticated
 from rest_framework.views import APIView
 
@@ -18,6 +19,38 @@ from core.exceptions import BizException
 from core.pagination import StandardPagination
 from core.permissions import HasPerm
 from core.responses import success
+
+# ---------------------------------------------------------------------------
+# 文档响应序列化器
+# ---------------------------------------------------------------------------
+
+
+class RoleListResponseSerializer(serializers.Serializer):
+    """角色分页响应."""
+
+    items = RoleListSerializer(many=True, label="角色列表")
+    total = serializers.IntegerField(label="总数量")
+    page = serializers.IntegerField(label="当前页码")
+    page_size = serializers.IntegerField(label="每页数量")
+
+
+class PermissionItemResponseSerializer(serializers.Serializer):
+    """权限码项响应."""
+
+    id = serializers.IntegerField(label="权限 ID")
+    code = serializers.CharField(label="权限编码")
+    name = serializers.CharField(label="权限名称")
+
+
+class PermissionGroupResponseSerializer(serializers.Serializer):
+    """权限码分组响应."""
+
+    module = serializers.CharField(label="权限模块")
+    permissions = PermissionItemResponseSerializer(
+        many=True,
+        label="权限码列表",
+    )
+
 
 # ---------------------------------------------------------------------------
 # 权限类
@@ -90,6 +123,12 @@ class RoleListCreateView(APIView):
         """根据请求方法分配权限."""
         return [IsPlatformAdmin()]
 
+    @extend_schema(
+        operation_id="role_list",
+        summary="角色列表",
+        description="分页查询系统角色及其权限和关联用户数量。",
+        responses={200: RoleListResponseSerializer},
+    )
     def get(self, request):
         """角色列表,分页."""
         queryset = _get_role_queryset().order_by("code", "pk")
@@ -108,6 +147,13 @@ class RoleListCreateView(APIView):
             }
         )
 
+    @extend_schema(
+        operation_id="role_create",
+        summary="创建角色",
+        description="创建系统角色，并分配权限码。",
+        request=RoleCreateSerializer,
+        responses={201: RoleListSerializer},
+    )
     @transaction.atomic
     def post(self, request):
         """创建角色."""
@@ -148,6 +194,12 @@ class RoleDetailView(APIView):
         """根据请求方法分配权限."""
         return [IsPlatformAdmin()]
 
+    @extend_schema(
+        operation_id="role_detail",
+        summary="角色详情",
+        description="根据角色编码查询角色详情，包括权限码和关联用户数量。",
+        responses={200: RoleListSerializer},
+    )
     def get(self, request, code):
         """角色详情."""
         role = _get_role(code)
@@ -155,6 +207,16 @@ class RoleDetailView(APIView):
 
         return success(data=RoleListSerializer(role).data)
 
+    @extend_schema(
+        operation_id="role_update",
+        summary="编辑角色",
+        description=(
+            "修改角色名称、启用状态或权限码。"
+            "permission_codes 为全量替换，未提供的字段保持不变。"
+        ),
+        request=RoleUpdateSerializer,
+        responses={200: RoleListSerializer},
+    )
     @transaction.atomic
     def patch(self, request, code):
         """编辑角色：名称、启用状态、权限码."""
@@ -196,6 +258,12 @@ class PermissionListView(APIView):
 
     permission_classes = (IsAuthenticated, CanListPermission)
 
+    @extend_schema(
+        operation_id="permission_list",
+        summary="权限码列表",
+        description="查询所有启用的权限码，并按所属模块分组。",
+        responses={200: PermissionGroupResponseSerializer(many=True)},
+    )
     def get(self, request):
         """返回按模块分组的权限码."""
         permissions = (
