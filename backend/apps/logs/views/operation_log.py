@@ -59,6 +59,14 @@ class OperationLogListView(APIView):
             )
 
         end_time = request.query_params.get("end_time")
+        if start_time and end_time:
+            parsed_start = _parse_datetime(start_time, "start_time")
+            parsed_end = _parse_datetime(end_time, "end_time")
+            if parsed_start > parsed_end:
+                raise BizException(
+                    code=BizCode.PARAM_INVALID,
+                    message="start_time 不能晚于 end_time",
+                )
         if end_time:
             queryset = queryset.filter(
                 created_at__lte=_parse_datetime(end_time, "end_time")

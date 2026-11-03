@@ -166,6 +166,19 @@ class OperationLogFilterTest(OperationLogTestBase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(response.data["code"], 10001)
 
+    def test_start_time_after_end_time(self):
+        """开始时间晚于结束时间时返回参数错误."""
+        now = timezone.now()
+        response = self.client.get(
+            self.url,
+            {
+                "start_time": now.isoformat(),
+                "end_time": (now - timedelta(hours=1)).isoformat(),
+            },
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data["code"], 10001)
+
 
 class OperationLogOrderTest(OperationLogTestBase):
     """排序和字段测试."""
@@ -184,3 +197,14 @@ class OperationLogOrderTest(OperationLogTestBase):
         item = data["items"][0]
         self.assertEqual(item["user_employee_code"], self.superuser.employee_code)
         self.assertEqual(item["user_real_name"], "超级管理员")
+
+    def test_store_detail_and_pagination_fields(self):
+        """返回门店名称、日志详情和分页信息."""
+        self._auth_superuser()
+        data = self._get_logs({"module": "store"})
+
+        item = data["items"][0]
+        self.assertEqual(item["store_name"], None)
+        self.assertEqual(item["detail"], {"code": "S001"})
+        self.assertEqual(data["page"], 1)
+        self.assertEqual(data["page_size"], 20)
