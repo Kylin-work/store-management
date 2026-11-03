@@ -5,7 +5,14 @@
 
 from datetime import timedelta
 
-from django.db.models import Count, Sum
+from django.db.models import (
+    Count,
+    DecimalField,
+    ExpressionWrapper,
+    F,
+    IntegerField,
+    Sum,
+)
 from django.db.models.functions import TruncDay
 from django.utils import timezone
 from rest_framework import status
@@ -13,7 +20,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 
 from apps.members.models import Member
-from apps.transactions.models import Transaction, TransactionStatus
+from apps.transactions.models import TransactionItem, TransactionStatus
 from core.codes import BizCode
 from core.exceptions import BizException
 from core.permissions import HasPerm
@@ -55,6 +62,33 @@ def _today_range():
     return start, end
 
 
+def _net_quantity_expression():
+    """商品净销量表达式."""
+    return ExpressionWrapper(
+        F("quantity") - F("refunded_quantity"),
+        output_field=IntegerField(),
+    )
+
+
+def _net_amount_expression():
+    """商品净销售金额表达式."""
+    return ExpressionWrapper(
+        F("unit_price") * (F("quantity") - F("refunded_quantity")),
+        output_field=DecimalField(max_digits=14, decimal_places=2),
+    )
+
+
+def _valid_transaction_items():
+    """返回本店有效交易的未退款商品明细."""
+    return TransactionItem.objects.filter(
+        transaction__status__in=(
+            TransactionStatus.COMPLETED,
+            TransactionStatus.PARTIAL_REFUNDED,
+        ),
+        quantity__gt=F("refunded_quantity"),
+    )
+
+
 # ---------------------------------------------------------------------------
 # 概览
 # ---------------------------------------------------------------------------
@@ -70,15 +104,18 @@ class DashboardSummaryView(APIView):
         store_id = _get_store_id(request)
         start, end = _today_range()
 
-        today_tx = Transaction.objects.filter(
-            store_id=store_id,
-            status=TransactionStatus.COMPLETED,
-            created_at__gte=start,
-            created_at__lt=end,
-        )
-        today_stats = today_tx.aggregate(
-            total_amount=Sum("total_amount"),
-            order_count=Count("id"),
+        today_stats = (
+            _valid_transaction_items()
+            .filter(
+                transaction__store_id=store_id,
+                transaction__created_at__gte=start,
+                transaction__created_at__lt=end,
+            )
+            .annotate(net_amount=_net_amount_expression())
+            .aggregate(
+                total_amount=Sum("net_amount"),
+                order_count=Count("transaction_id", distinct=True),
+            )
         )
 
         new_members = Member.objects.filter(
@@ -105,23 +142,23 @@ class DashboardSummaryView(APIView):
 
 
 class DashboardTopProductsView(APIView):
-    """热销商品排行 (按销量)."""
+    """热销商品排行 (按净销量)."""
 
     permission_classes = (IsAuthenticated, CanViewDashboard)
 
     def get(self, request):
-        """返回本店销量前 10 的商品."""
-        store_id = _get_store_id(request)
-
+        """返回本店净销量前 10 的商品."""
         top = (
-            Transaction.objects.filter(
-                store_id=store_id,
-                status=TransactionStatus.COMPLETED,
-            )
-            .values("items__product__id", "items__product__name")
+            _valid_transaction_items()
+            .filter(transaction__store_id=_get_store_id(request))
             .annotate(
-                total_quantity=Sum("items__quantity"),
-                total_amount=Sum("items__subtotal"),
+                net_quantity=_net_quantity_expression(),
+                net_amount=_net_amount_expression(),
+            )
+            .values("product_id", "product__name")
+            .annotate(
+                total_quantity=Sum("net_quantity"),
+                total_amount=Sum("net_amount"),
             )
             .order_by("-total_quantity")[:10]
         )
@@ -129,8 +166,8 @@ class DashboardTopProductsView(APIView):
         return success(
             data=[
                 {
-                    "product_id": item["items__product__id"],
-                    "product_name": item["items__product__name"],
+                    "product_id": item["product_id"],
+                    "product_name": item["product__name"],
                     "total_quantity": item["total_quantity"],
                     "total_amount": str(item["total_amount"]),
                 }
@@ -145,24 +182,27 @@ class DashboardTopProductsView(APIView):
 
 
 class DashboardTopMembersView(APIView):
-    """会员消费排行 (按消费金额)."""
+    """会员消费排行 (按净消费金额)."""
 
     permission_classes = (IsAuthenticated, CanViewDashboard)
 
     def get(self, request):
-        """返回本店消费金额前 10 的会员."""
-        store_id = _get_store_id(request)
-
+        """返回本店净消费金额前 10 的会员."""
         top = (
-            Transaction.objects.filter(
-                store_id=store_id,
-                status=TransactionStatus.COMPLETED,
-                member__isnull=False,
+            _valid_transaction_items()
+            .filter(
+                transaction__store_id=_get_store_id(request),
+                transaction__member__isnull=False,
             )
-            .values("member__id", "member__name", "member__phone")
+            .annotate(net_amount=_net_amount_expression())
+            .values(
+                "transaction__member_id",
+                "transaction__member__name",
+                "transaction__member__phone",
+            )
             .annotate(
-                total_amount=Sum("total_amount"),
-                order_count=Count("id"),
+                total_amount=Sum("net_amount"),
+                order_count=Count("transaction_id", distinct=True),
             )
             .order_by("-total_amount")[:10]
         )
@@ -170,9 +210,9 @@ class DashboardTopMembersView(APIView):
         return success(
             data=[
                 {
-                    "member_id": item["member__id"],
-                    "member_name": item["member__name"],
-                    "member_phone": item["member__phone"],
+                    "member_id": item["transaction__member_id"],
+                    "member_name": item["transaction__member__name"],
+                    "member_phone": item["transaction__member__phone"],
                     "total_amount": str(item["total_amount"]),
                     "order_count": item["order_count"],
                 }
@@ -192,7 +232,7 @@ class DashboardTransactionTrendView(APIView):
     permission_classes = (IsAuthenticated, CanViewDashboard)
 
     def get(self, request):
-        """返回最近 N 天的每日交易额和订单数."""
+        """返回最近 N 天的每日净交易额和有效订单数."""
         store_id = _get_store_id(request)
 
         try:
@@ -215,16 +255,19 @@ class DashboardTransactionTrendView(APIView):
         tz = timezone.get_current_timezone()
 
         trend = (
-            Transaction.objects.filter(
-                store_id=store_id,
-                status=TransactionStatus.COMPLETED,
-                created_at__gte=start,
+            _valid_transaction_items()
+            .filter(
+                transaction__store_id=store_id,
+                transaction__created_at__gte=start,
             )
-            .annotate(day=TruncDay("created_at", tzinfo=tz))
+            .annotate(
+                day=TruncDay("transaction__created_at", tzinfo=tz),
+                net_amount=_net_amount_expression(),
+            )
             .values("day")
             .annotate(
-                total_amount=Sum("total_amount"),
-                order_count=Count("id"),
+                total_amount=Sum("net_amount"),
+                order_count=Count("transaction_id", distinct=True),
             )
             .order_by("day")
         )

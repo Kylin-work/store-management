@@ -103,7 +103,7 @@ class DashboardTestBase(APITestCase):
         status=TransactionStatus.COMPLETED,
         created_at=None,
     ):
-        """创建一笔已完成交易."""
+        """创建一笔交易."""
         subtotal = self.product.price * quantity
         tx = Transaction.objects.create(
             store=self.store,
@@ -124,6 +124,18 @@ class DashboardTestBase(APITestCase):
         if created_at:
             # auto_now_add 不允许直接赋值, 用 queryset.update 覆盖
             Transaction.objects.filter(pk=tx.pk).update(created_at=created_at)
+        return tx
+
+    def _create_partially_refunded_transaction(
+        self, *, member=None, quantity=4, refunded_quantity=1
+    ):
+        """创建部分退款交易."""
+        tx = self._create_transaction(
+            member=member,
+            quantity=quantity,
+            status=TransactionStatus.PARTIAL_REFUNDED,
+        )
+        tx.items.update(refunded_quantity=refunded_quantity)
         return tx
 
     def assert_success(self, response, expected_status=status.HTTP_200_OK):
@@ -204,6 +216,17 @@ class DashboardSummaryTest(DashboardTestBase):
         self.assertEqual(data["today_total_amount"], "0.00")
         self.assertEqual(data["today_order_count"], 0)
 
+    def test_partial_refunded_transaction_uses_net_amount(self):
+        """部分退款交易按净金额统计."""
+        self._create_partially_refunded_transaction()
+        self._auth_manager()
+
+        response = self.client.get(reverse("dashboard-summary"))
+        data = self.assert_success(response)
+
+        self.assertEqual(data["today_total_amount"], "150.00")
+        self.assertEqual(data["today_order_count"], 1)
+
 
 class DashboardTopProductsTest(DashboardTestBase):
     """热销商品测试."""
@@ -231,6 +254,17 @@ class DashboardTopProductsTest(DashboardTestBase):
 
         self.assertEqual(data[0]["total_quantity"], 2)
 
+    def test_partial_refunded_uses_net_quantity_and_amount(self):
+        """热销商品按退款后的净销量和净金额统计."""
+        self._create_partially_refunded_transaction()
+        self._auth_manager()
+
+        response = self.client.get(reverse("dashboard-top-products"))
+        data = self.assert_success(response)
+
+        self.assertEqual(data[0]["total_quantity"], 3)
+        self.assertEqual(data[0]["total_amount"], "150.00")
+
 
 class DashboardTopMembersTest(DashboardTestBase):
     """会员消费排行测试."""
@@ -255,6 +289,17 @@ class DashboardTopMembersTest(DashboardTestBase):
         response = self.client.get(reverse("dashboard-top-members"))
         data = self.assert_success(response)
         self.assertEqual(data, [])
+
+    def test_partial_refunded_uses_net_amount(self):
+        """会员消费排行按退款后的净金额统计."""
+        self._create_partially_refunded_transaction(member=self.member)
+        self._auth_manager()
+
+        response = self.client.get(reverse("dashboard-top-members"))
+        data = self.assert_success(response)
+
+        self.assertEqual(data[0]["total_amount"], "150.00")
+        self.assertEqual(data[0]["order_count"], 1)
 
 
 class DashboardTrendTest(DashboardTestBase):
@@ -306,3 +351,16 @@ class DashboardTrendTest(DashboardTestBase):
             reverse("dashboard-transaction-trend"), {"days": "abc"}
         )
         self.assert_failed(response, status.HTTP_400_BAD_REQUEST, expected_code=10001)
+
+    def test_trend_partial_refunded_uses_net_amount(self):
+        """交易趋势按退款后的净金额统计."""
+        self._create_partially_refunded_transaction()
+        self._auth_manager()
+
+        response = self.client.get(reverse("dashboard-transaction-trend"), {"days": 7})
+        data = self.assert_success(response)
+
+        today = timezone.localtime().date().isoformat()
+        today_item = next(item for item in data if item["date"] == today)
+        self.assertEqual(today_item["total_amount"], "150.00")
+        self.assertEqual(today_item["order_count"], 1)
