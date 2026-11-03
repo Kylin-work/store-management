@@ -231,9 +231,11 @@ class ProductDetailView(APIView):
 
         return success(data={"id": product.pk, "is_active": False})
 
+
 # ---------------------------------------------------------------------------
 # 商品库存调整
 # ---------------------------------------------------------------------------
+
 
 class ProductAdjustStockView(APIView):
     """商品库存调整, 仅店长."""
@@ -277,7 +279,5 @@ class ProductAdjustStockView(APIView):
         )
 
         return success(
-            data=ProductListSerializer(
-                product, context={"request": request}
-            ).data
+            data=ProductListSerializer(product, context={"request": request}).data
         )

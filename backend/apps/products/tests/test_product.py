@@ -34,9 +34,7 @@ class ProductTestBase(APITestCase):
 
         # 权限码
         self.perms = {
-            code: Permission.objects.create(
-                code=code, name=code, module="product"
-            )
+            code: Permission.objects.create(code=code, name=code, module="product")
             for code in (
                 "product:list",
                 "product:create",
@@ -93,9 +91,7 @@ class ProductTestBase(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
 
     def _auth_staff(self):
-        token = self._make_token(
-            self.staff, store_id=self.store.pk, role_code="staff"
-        )
+        token = self._make_token(self.staff, store_id=self.store.pk, role_code="staff")
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
 
     def _create_product(self, store=None, name="测试商品", price="50.00", cost="30.00"):
@@ -182,6 +178,31 @@ class ProductCreateTest(ProductTestBase):
         self.assertEqual(data["name"], "新商品")
         self.assertEqual(data["price"], "50.00")
 
+    @patch(
+        "apps.products.views.product.log_operation",
+        side_effect=RuntimeError("日志写入失败"),
+    )
+    def test_create_rollback_when_log_fails(self, mock_log):
+        """操作日志写入失败时，商品创建应回滚."""
+        response = self.client.post(
+            reverse("product-list"),
+            {
+                "name": "事务回滚商品",
+                "price": "50.00",
+                "cost": "30.00",
+                "stock": 10,
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
+        self.assertFalse(
+            Product.objects.filter(
+                store=self.store,
+                name="事务回滚商品",
+            ).exists()
+        )
+
     def test_duplicate_name_same_store(self):
         self._create_product(name="重复商品")
         response = self.client.post(
@@ -228,9 +249,7 @@ class ProductDetailTest(ProductTestBase):
     def test_detail_cross_store_404(self):
         other = self._create_product(store=self.other_store, name="他店商品")
         self._auth_manager()
-        response = self.client.get(
-            reverse("product-detail", kwargs={"pk": other.pk})
-        )
+        response = self.client.get(reverse("product-detail", kwargs={"pk": other.pk}))
         self.assert_failed(response, status.HTTP_404_NOT_FOUND)
 
     def test_manager_update_cost(self):
