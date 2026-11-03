@@ -197,6 +197,54 @@ class MenuSuccessTest(MenuTestBase):
         sorts = [item["sort"] for item in data]
         self.assertEqual(sorts, sorted(sorts))
 
+    def test_parent_without_permission_hides_authorized_child(self):
+        """父菜单无权限时,即使子菜单有权限也不返回."""
+        parent = Menu.objects.create(
+            code="parent_menu",
+            name="父菜单",
+            path="",
+            permission_code="dashboard:view",
+            sort=200,
+        )
+        Menu.objects.create(
+            code="child_menu",
+            name="子菜单",
+            path="/child",
+            permission_code="member:list",
+            parent=parent,
+            sort=10,
+        )
+
+        self._auth_manager()
+        data = self._get_menus()
+
+        codes = self._menu_codes(data)
+        self.assertNotIn("parent_menu", codes)
+        self.assertNotIn("child_menu", codes)
+
+    def test_parent_without_path_is_hidden_when_all_children_filtered(self):
+        """无路由父菜单的子菜单全部被过滤时,父菜单也不返回."""
+        parent = Menu.objects.create(
+            code="empty_parent",
+            name="空父菜单",
+            path="",
+            permission_code="",
+            sort=200,
+        )
+        Menu.objects.create(
+            code="hidden_child",
+            name="无权限子菜单",
+            path="/hidden",
+            permission_code="dashboard:view",
+            parent=parent,
+            sort=10,
+        )
+
+        self._auth_manager()
+        data = self._get_menus()
+
+        self.assertNotIn("empty_parent", self._menu_codes(data))
+
 
 class MenuFailTest(MenuTestBase):
     """菜单接口失败场景."""
