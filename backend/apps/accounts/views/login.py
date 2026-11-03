@@ -4,38 +4,14 @@
 """
 
 from drf_spectacular.utils import extend_schema
-from rest_framework import serializers
 from rest_framework.permissions import AllowAny
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.accounts.serializers.login import LoginSerializer
+from apps.accounts.serializers.schema import LoginResponseSerializer
 from core.responses import success
-
-
-class LoginUserResponseSerializer(serializers.Serializer):
-    """登录用户信息."""
-
-    employee_code = serializers.CharField(label="工号")
-    real_name = serializers.CharField(label="姓名")
-    is_superuser = serializers.BooleanField(label="是否超级管理员")
-    store_id = serializers.IntegerField(
-        label="门店 ID",
-        allow_null=True,
-    )
-    role_code = serializers.CharField(
-        label="角色编码",
-        allow_null=True,
-    )
-
-
-class LoginResponseSerializer(serializers.Serializer):
-    """登录响应数据."""
-
-    access = serializers.CharField(label="Access Token")
-    refresh = serializers.CharField(label="Refresh Token")
-    user = LoginUserResponseSerializer(label="用户信息")
 
 
 class LoginView(APIView):

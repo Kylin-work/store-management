@@ -6,45 +6,11 @@
 """
 
 from drf_spectacular.utils import extend_schema
-from rest_framework import serializers
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 
+from apps.accounts.serializers.schema import MeResponseSerializer
 from core.responses import success
-
-
-class MeUserResponseSerializer(serializers.Serializer):
-    """当前用户基本信息."""
-
-    id = serializers.IntegerField(label="用户 ID")
-    employee_code = serializers.CharField(label="工号")
-    real_name = serializers.CharField(label="姓名")
-    is_superuser = serializers.BooleanField(label="是否超级管理员")
-
-
-class MeContextResponseSerializer(serializers.Serializer):
-    """当前用户认证上下文."""
-
-    store_id = serializers.IntegerField(
-        label="门店 ID",
-        allow_null=True,
-    )
-    role_code = serializers.CharField(
-        label="角色编码",
-        allow_null=True,
-    )
-
-
-class MeResponseSerializer(serializers.Serializer):
-    """当前用户信息响应."""
-
-    user = MeUserResponseSerializer(label="用户信息")
-    context = MeContextResponseSerializer(label="认证上下文")
-    permissions = serializers.ListField(
-        child=serializers.CharField(),
-        label="权限编码列表",
-        allow_null=True,
-    )
 
 
 class MeView(APIView):

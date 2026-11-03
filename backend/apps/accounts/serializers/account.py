@@ -6,6 +6,7 @@ from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from apps.accounts.models import Role, User, UserStoreRole
+from apps.accounts.serializers.schema import AccountStoreRoleResponseSerializer
 from apps.stores.models import Store
 
 
@@ -19,15 +20,6 @@ class StoreRoleItemSerializer(serializers.Serializer):
         trim_whitespace=True,
         label="角色编码",
     )
-
-
-class AccountStoreRoleResponseSerializer(serializers.Serializer):
-    """账号关联的门店角色响应项."""
-
-    store_id = serializers.IntegerField(label="门店 ID")
-    store_name = serializers.CharField(label="门店名称")
-    role_code = serializers.CharField(label="角色编码")
-    role_name = serializers.CharField(label="角色名称")
 
 
 class AccountListSerializer(serializers.ModelSerializer):

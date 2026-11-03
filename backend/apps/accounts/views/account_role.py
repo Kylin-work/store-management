@@ -2,12 +2,13 @@
 
 from django.db import transaction
 from drf_spectacular.utils import extend_schema
-from rest_framework import serializers, status
+from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 
 from apps.accounts.models import UserStoreRole
 from apps.accounts.serializers.account import AccountListSerializer
+from apps.accounts.serializers.schema import AccountStoreRolesRequestSerializer
 from apps.accounts.views.account import (
     CanUpdateAccount,
     _get_account_queryset,
@@ -18,27 +19,6 @@ from apps.logs.services.logger import log_operation
 from core.codes import BizCode
 from core.exceptions import BizException
 from core.responses import success
-
-
-class StoreRoleItemRequestSerializer(serializers.Serializer):
-    """单个门店角色."""
-
-    store_id = serializers.IntegerField(
-        label="门店 ID",
-        min_value=1,
-    )
-    role_code = serializers.CharField(
-        label="角色编码",
-    )
-
-
-class AccountStoreRolesRequestSerializer(serializers.Serializer):
-    """账号门店角色调整请求."""
-
-    store_roles = StoreRoleItemRequestSerializer(
-        many=True,
-        label="门店角色列表",
-    )
 
 
 class AccountStoreRolesView(APIView):

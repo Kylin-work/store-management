@@ -1,33 +1,18 @@
 """账号状态管理视图."""
 
 from django.db import transaction
-from drf_spectacular.utils import extend_schema
-from rest_framework import serializers, status
+from drf_spectacular.utils import OpenApiRequest, extend_schema
+from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 
 from apps.accounts.models import UserStoreRole
+from apps.accounts.serializers.schema import AccountStatusResponseSerializer
 from apps.accounts.views.account import CanUpdateAccount, _get_user
 from apps.logs.services.logger import log_operation
 from core.codes import BizCode
 from core.exceptions import BizException
 from core.responses import success
-
-
-class AccountStatusRequestSerializer(serializers.Serializer):
-    """账号状态修改请求."""
-
-    is_active = serializers.BooleanField(
-        label="是否启用",
-        help_text="true 表示启用，false 表示停用。",
-    )
-
-
-class AccountStatusResponseSerializer(serializers.Serializer):
-    """账号状态修改响应."""
-
-    employee_code = serializers.CharField(label="员工编号")
-    is_active = serializers.BooleanField(label="是否启用")
 
 
 class AccountStatusView(APIView):
@@ -42,7 +27,20 @@ class AccountStatusView(APIView):
             "超级管理员修改账号的全局启用状态；"
             "普通门店管理员修改账号在当前门店的任职状态。"
         ),
-        request=AccountStatusRequestSerializer,
+        request=OpenApiRequest(
+            request={
+                "type": "object",
+                "description": "账号状态调整请求.",
+                "properties": {
+                    "is_active": {
+                        "type": "boolean",
+                        "title": "是否启用",
+                        "description": "true 表示启用，false 表示停用。",
+                    }
+                },
+                "required": ["is_active"],
+            }
+        ),
         responses={200: AccountStatusResponseSerializer},
     )
     @transaction.atomic

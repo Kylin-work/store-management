@@ -3,7 +3,7 @@
 from django.db import transaction
 from django.db.models import Count
 from drf_spectacular.utils import extend_schema
-from rest_framework import serializers, status
+from rest_framework import status
 from rest_framework.permissions import BasePermission, IsAuthenticated
 from rest_framework.views import APIView
 
@@ -13,44 +13,16 @@ from apps.accounts.serializers.role import (
     RoleListSerializer,
     RoleUpdateSerializer,
 )
+from apps.accounts.serializers.schema import (
+    PermissionGroupResponseSerializer,
+    RoleListResponseSerializer,
+)
 from apps.logs.services.logger import log_operation
 from core.codes import BizCode
 from core.exceptions import BizException
 from core.pagination import StandardPagination
 from core.permissions import HasPerm
 from core.responses import success
-
-# ---------------------------------------------------------------------------
-# 文档响应序列化器
-# ---------------------------------------------------------------------------
-
-
-class RoleListResponseSerializer(serializers.Serializer):
-    """角色分页响应."""
-
-    items = RoleListSerializer(many=True, label="角色列表")
-    total = serializers.IntegerField(label="总数量")
-    page = serializers.IntegerField(label="当前页码")
-    page_size = serializers.IntegerField(label="每页数量")
-
-
-class PermissionItemResponseSerializer(serializers.Serializer):
-    """权限码项响应."""
-
-    id = serializers.IntegerField(label="权限 ID")
-    code = serializers.CharField(label="权限编码")
-    name = serializers.CharField(label="权限名称")
-
-
-class PermissionGroupResponseSerializer(serializers.Serializer):
-    """权限码分组响应."""
-
-    module = serializers.CharField(label="权限模块")
-    permissions = PermissionItemResponseSerializer(
-        many=True,
-        label="权限码列表",
-    )
-
 
 # ---------------------------------------------------------------------------
 # 权限类

@@ -13,6 +13,7 @@ from apps.accounts.serializers.account import (
     AccountUpdateSerializer,
     StoreRoleItemSerializer,
 )
+from apps.accounts.serializers.schema import AccountListResponseSerializer
 from apps.logs.services.logger import log_operation
 from apps.stores.models import Store
 from core.codes import BizCode
@@ -171,7 +172,7 @@ class AccountListCreateView(APIView):
         operation_id="account_list",
         summary="账号列表",
         description="分页查询账号。普通门店管理员只能查看当前门店的员工。",
-        responses={200: AccountListSerializer(many=True)},
+        responses={200: AccountListResponseSerializer},
     )
     def get(self, request):
         """账号列表,分页."""
@@ -324,12 +325,3 @@ class AccountDetailView(APIView):
                 context={"store_id": store_id},
             ).data
         )
-
-
-# ---------------------------------------------------------------------------
-# 账号启用与停用
-# ---------------------------------------------------------------------------
-
-
-# 账号门店角色调整
-# ---------------------------------------------------------------------------
