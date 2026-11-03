@@ -283,6 +283,24 @@ class ProductDetailTest(ProductTestBase):
         data = self.assert_success(response)
         self.assertEqual(data["name"], "改名商品")
 
+    def test_cannot_update_stock(self):
+        """普通商品编辑接口禁止修改库存."""
+        self._auth_manager()
+        response = self.client.patch(
+            reverse("product-detail", kwargs={"pk": self.product.pk}),
+            {"stock": 200},
+            format="json",
+        )
+
+        self.assert_failed(
+            response,
+            status.HTTP_400_BAD_REQUEST,
+            expected_code=10001,
+        )
+
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.stock, 100)
+
 
 class ProductDeleteTest(ProductTestBase):
     """商品删除测试."""

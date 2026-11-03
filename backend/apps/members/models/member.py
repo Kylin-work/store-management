@@ -59,6 +59,10 @@ class Member(models.Model):
                 fields=("store", "phone"),
                 name="uniq_store_member_phone",
             ),
+            models.CheckConstraint(
+                condition=models.Q(points__gte=0),
+                name="member_points_nonneg",
+            ),
         )
 
     def __str__(self):

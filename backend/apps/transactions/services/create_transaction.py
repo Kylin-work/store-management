@@ -9,7 +9,11 @@ from decimal import Decimal
 from django.db import transaction
 
 from apps.logs.services.logger import log_operation
-from apps.members.models import Member
+from apps.members.models import (
+    Member,
+    PointsRecord,
+    PointsRecordType,
+)
 from apps.products.models import Product
 from apps.transactions.models import (
     Transaction,
@@ -148,13 +152,27 @@ def create_transaction(
             product.stock -= item["quantity"]
             product.save(update_fields=("stock", "updated_at"))
 
-        # 会员积分
+        # 会员积分及积分流水
         points_earned = 0
         if member is not None:
             points_earned = int(total_amount * POINTS_PER_YUAN)
             if points_earned > 0:
+                points_before = member.points
                 member.points += points_earned
                 member.save(update_fields=("points", "updated_at"))
+
+                PointsRecord.objects.create(
+                    member=member,
+                    staff=staff,
+                    transaction=tx,
+                    earn_transaction=tx,
+                    record_type=PointsRecordType.EARN,
+                    points_delta=points_earned,
+                    points_expected_delta=points_earned,
+                    points_before=points_before,
+                    points_after=member.points,
+                    reason="交易消费获得积分",
+                )
 
         # 操作日志
         log_operation(

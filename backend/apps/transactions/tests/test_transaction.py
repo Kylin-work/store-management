@@ -10,7 +10,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.accounts.models import Permission, Role, User, UserStoreRole
 from apps.logs.models import OperationLog
-from apps.members.models import Member
+from apps.members.models import Member, PointsRecord, PointsRecordType
 from apps.products.models import Product
 from apps.stores.models import Store
 from apps.transactions.models import Transaction, TransactionItem
@@ -142,7 +142,7 @@ class TransactionCreateTest(TransactionTestBase):
         self._auth_manager()
 
     def test_create_success(self):
-        """创建交易, 扣库存, 算积分."""
+        """创建交易, 扣库存, 算积分并记录积分流水."""
         response = self.client.post(
             reverse("transaction-list"),
             self._create_transaction_payload(member_id=self.member.pk),
@@ -154,6 +154,8 @@ class TransactionCreateTest(TransactionTestBase):
         self.assertEqual(data["member_name"], "测试会员")
         self.assertEqual(len(data["items"]), 1)
 
+        tx = Transaction.objects.get(pk=data["id"])
+
         # 库存扣减
         self.product.refresh_from_db()
         self.assertEqual(self.product.stock, 98)
@@ -162,12 +164,58 @@ class TransactionCreateTest(TransactionTestBase):
         self.member.refresh_from_db()
         self.assertEqual(self.member.points, 100)
 
+        # 积分流水
+        records = PointsRecord.objects.filter(
+            transaction=tx,
+            record_type=PointsRecordType.EARN,
+        )
+        self.assertEqual(records.count(), 1)
+
+        record = records.get()
+        self.assertEqual(record.member_id, self.member.pk)
+        self.assertEqual(record.staff_id, self.manager.pk)
+        self.assertEqual(record.earn_transaction_id, tx.pk)
+        self.assertEqual(record.points_delta, 100)
+        self.assertEqual(record.points_expected_delta, 100)
+        self.assertEqual(record.points_before, 0)
+        self.assertEqual(record.points_after, 100)
+
+    @patch(
+        "apps.transactions.services.create_transaction.PointsRecord.objects.create",
+        side_effect=RuntimeError("积分流水写入失败"),
+    )
+    def test_create_rollback_when_points_record_fails(self, mock_create):
+        """积分流水写入失败时, 交易、库存和会员积分全部回滚."""
+        response = self.client.post(
+            reverse("transaction-list"),
+            self._create_transaction_payload(member_id=self.member.pk),
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
+        mock_create.assert_called_once()
+
+        # 交易和明细回滚
+        self.assertEqual(Transaction.objects.filter(store=self.store).count(), 0)
+        self.assertEqual(TransactionItem.objects.count(), 0)
+
+        # 库存回滚
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.stock, 100)
+
+        # 会员积分回滚
+        self.member.refresh_from_db()
+        self.assertEqual(self.member.points, 0)
+
+        # 积分流水回滚
+        self.assertEqual(PointsRecord.objects.count(), 0)
+
     @patch(
         "apps.transactions.services.create_transaction.log_operation",
         side_effect=RuntimeError("日志写入失败"),
     )
     def test_create_rollback_when_log_fails(self, mock_log):
-        """操作日志写入失败时, 交易、库存和积分全部回滚."""
+        """操作日志写入失败时, 交易、库存、积分和积分流水全部回滚."""
         response = self.client.post(
             reverse("transaction-list"),
             self._create_transaction_payload(member_id=self.member.pk),
@@ -178,12 +226,15 @@ class TransactionCreateTest(TransactionTestBase):
         mock_log.assert_called_once()
 
         self.assertEqual(Transaction.objects.filter(store=self.store).count(), 0)
+        self.assertEqual(TransactionItem.objects.count(), 0)
 
         self.product.refresh_from_db()
         self.assertEqual(self.product.stock, 100)
 
         self.member.refresh_from_db()
         self.assertEqual(self.member.points, 0)
+
+        self.assertEqual(PointsRecord.objects.count(), 0)
 
     def test_create_without_member(self):
         """散客交易, 不关联会员, 不加积分."""
@@ -197,6 +248,7 @@ class TransactionCreateTest(TransactionTestBase):
 
         self.member.refresh_from_db()
         self.assertEqual(self.member.points, 0)
+        self.assertEqual(PointsRecord.objects.count(), 0)
 
     def test_create_insufficient_stock(self):
         """库存不足时创建失败."""
@@ -209,7 +261,6 @@ class TransactionCreateTest(TransactionTestBase):
         )
         self.assert_failed(response, status.HTTP_400_BAD_REQUEST, expected_code=50002)
 
-        # 库存未变
         self.product.refresh_from_db()
         self.assertEqual(self.product.stock, 100)
 
@@ -276,14 +327,13 @@ class TransactionListTest(TransactionTestBase):
 
     def test_staff_only_sees_own_transactions(self):
         """店员只看到自己经手的交易."""
-        # 店长创建一笔
         self._auth_manager()
         self.client.post(
             reverse("transaction-list"),
             self._create_transaction_payload(),
             format="json",
         )
-        # 店员创建一笔
+
         self._auth_staff()
         self.client.post(
             reverse("transaction-list"),
@@ -302,7 +352,6 @@ class TransactionRefundTest(TransactionTestBase):
 
     def setUp(self):
         super().setUp()
-        # 先创建一笔交易
         self._auth_manager()
         response = self.client.post(
             reverse("transaction-list"),
@@ -323,11 +372,9 @@ class TransactionRefundTest(TransactionTestBase):
         data = self.assert_success(response)
         self.assertEqual(data["status"], "refunded")
 
-        # 库存回滚
         self.product.refresh_from_db()
         self.assertEqual(self.product.stock, 100)
 
-        # 积分扣回
         self.member.refresh_from_db()
         self.assertEqual(self.member.points, 0)
 
@@ -346,7 +393,6 @@ class TransactionRefundTest(TransactionTestBase):
 
     def test_refund_cross_store_404(self):
         """跨店退款返回 404."""
-        # 用另一家店的店长身份退款
         other_manager = User.objects.create_user(
             employee_code=None,
             password="Manager2@123456",
@@ -365,16 +411,31 @@ class TransactionRefundTest(TransactionTestBase):
         self.assert_failed(response, status.HTTP_404_NOT_FOUND, expected_code=60001)
 
     def test_refund_points_not_negative(self):
-        """积分不足时扣到 0 为止, 不产生负积分."""
-        # 手动把会员积分清零 (模拟积分已被消费)
+        """积分不足时扣到 0 为止, 并记录预期与实际扣回积分."""
         self.member.points = 0
         self.member.save(update_fields=["points"])
 
         self._auth_manager()
-        self._refund()
+        response = self._refund()
+        self.assert_success(response)
 
         self.member.refresh_from_db()
         self.assertEqual(self.member.points, 0)
+
+        earn_record = PointsRecord.objects.get(
+            earn_transaction_id=self.tx_id,
+            record_type=PointsRecordType.EARN,
+        )
+        refund_record = PointsRecord.objects.get(
+            transaction_id=self.tx_id,
+            record_type=PointsRecordType.REFUND_DEDUCT,
+        )
+
+        self.assertEqual(earn_record.points_delta, 100)
+        self.assertEqual(refund_record.points_expected_delta, -100)
+        self.assertEqual(refund_record.points_delta, 0)
+        self.assertEqual(refund_record.points_before, 0)
+        self.assertEqual(refund_record.points_after, 0)
 
 
 class TransactionDetailTest(TransactionTestBase):
@@ -410,7 +471,6 @@ class TransactionPartialRefundTest(TransactionTestBase):
 
     def setUp(self):
         super().setUp()
-        # 买 3 件商品, 关联会员
         self._auth_manager()
         response = self.client.post(
             reverse("transaction-list"),
@@ -423,7 +483,6 @@ class TransactionPartialRefundTest(TransactionTestBase):
         data = response.data["data"]
         self.tx_id = data["id"]
         self.item_id = data["items"][0]["id"]
-        # 原始: 库存 100-3=97, 积分 150
 
     def _partial_refund(self, items):
         return self.client.post(
@@ -433,17 +492,15 @@ class TransactionPartialRefundTest(TransactionTestBase):
         )
 
     def test_partial_refund(self):
-        """退 1 件, 状态变为部分退款, 库存加 1, 积分按比例扣."""
+        """退 1 件, 状态变为部分退款, 库存和积分按比例变化."""
         self._auth_manager()
         response = self._partial_refund([{"item_id": self.item_id, "quantity": 1}])
         data = self.assert_success(response)
         self.assertEqual(data["status"], "partial_refunded")
 
-        # 库存从 97 回滚到 98
         self.product.refresh_from_db()
         self.assertEqual(self.product.stock, 98)
 
-        # 积分: 消费 150 元得 150 积分, 退 1/3 (50 元), 扣 50, 剩 100
         self.member.refresh_from_db()
         self.assertEqual(self.member.points, 100)
 
@@ -451,19 +508,15 @@ class TransactionPartialRefundTest(TransactionTestBase):
         """分三次退完, 状态最终变为已退款."""
         self._auth_manager()
 
-        # 退 1
         r1 = self._partial_refund([{"item_id": self.item_id, "quantity": 1}])
         self.assertEqual(r1.data["data"]["status"], "partial_refunded")
 
-        # 再退 1
         r2 = self._partial_refund([{"item_id": self.item_id, "quantity": 1}])
         self.assertEqual(r2.data["data"]["status"], "partial_refunded")
 
-        # 退最后 1
         r3 = self._partial_refund([{"item_id": self.item_id, "quantity": 1}])
         self.assertEqual(r3.data["data"]["status"], "refunded")
 
-        # 库存完全回滚
         self.product.refresh_from_db()
         self.assertEqual(self.product.stock, 100)
 
@@ -488,10 +541,8 @@ class TransactionPartialRefundTest(TransactionTestBase):
     def test_refund_after_full_refund(self):
         """已全额退款后再退款被拒."""
         self._auth_manager()
-        # 退完 3 件
         self._partial_refund([{"item_id": self.item_id, "quantity": 3}])
 
-        # 再退
         response = self._partial_refund([{"item_id": self.item_id, "quantity": 1}])
         self.assert_failed(response, status.HTTP_400_BAD_REQUEST, expected_code=60002)
 
@@ -530,18 +581,119 @@ class TransactionPartialRefundTest(TransactionTestBase):
         )
         mock_log.assert_called_once()
 
-        # 库存回滚
         self.product.refresh_from_db()
         self.assertEqual(self.product.stock, 97)
 
-        # 会员积分回滚
         self.member.refresh_from_db()
         self.assertEqual(self.member.points, 150)
 
-        # 明细退款数量回滚
         item = TransactionItem.objects.get(pk=self.item_id)
         self.assertEqual(item.refunded_quantity, 0)
 
-        # 交易状态回滚
         tx = Transaction.objects.get(pk=self.tx_id)
         self.assertEqual(tx.status, "completed")
+        # 退款流水必须随事务一起回滚, 只保留原消费获得流水.
+        records = PointsRecord.objects.filter(transaction_id=self.tx_id)
+
+        self.assertEqual(records.count(), 1)
+
+        earn_record = records.get(
+            record_type=PointsRecordType.EARN,
+        )
+        self.assertEqual(earn_record.points_delta, 150)
+
+        self.assertFalse(
+            records.filter(
+                record_type=PointsRecordType.REFUND_DEDUCT,
+            ).exists()
+        )
+
+
+class TransactionRefundRoundingTest(TransactionTestBase):
+    """退款积分累计取整测试."""
+
+    def setUp(self):
+        super().setUp()
+        self._auth_manager()
+
+        # 两件商品分别为 5.01 元和 5.00 元, 总金额 10.01 元.
+        self.product.price = Decimal("5.01")
+        self.product.save(update_fields=["price"])
+
+        second_product = Product.objects.create(
+            store=self.store,
+            name="取整测试商品",
+            price=Decimal("5.00"),
+            cost=Decimal("3.00"),
+            stock=100,
+        )
+        self.second_product = second_product
+
+        response = self.client.post(
+            reverse("transaction-list"),
+            {
+                "payment_method": "cash",
+                "member_id": self.member.pk,
+                "items": [
+                    {"product_id": self.product.pk, "quantity": 1},
+                    {"product_id": second_product.pk, "quantity": 1},
+                ],
+            },
+            format="json",
+        )
+        data = self.assert_success(response, status.HTTP_201_CREATED)
+
+        self.tx_id = data["id"]
+        self.item_ids = [item["id"] for item in data["items"]]
+
+        self.assertEqual(data["total_amount"], "10.01")
+
+        self.member.refresh_from_db()
+        self.assertEqual(self.member.points, 10)
+
+    def _partial_refund(self, item_id):
+        return self.client.post(
+            reverse("transaction-refund", kwargs={"pk": self.tx_id}),
+            {"items": [{"item_id": item_id, "quantity": 1}]},
+            format="json",
+        )
+
+    def test_split_refund_points_rounding(self):
+        """10.01 元交易分两次退款, 最终必须扣回全部 10 积分."""
+        # 第一次退 5.01 元, 累计应扣 5 分.
+        response1 = self._partial_refund(self.item_ids[0])
+        self.assert_success(response1)
+
+        self.member.refresh_from_db()
+        self.assertEqual(self.member.points, 5)
+
+        # 第二次退 5.00 元, 累计应扣 10 分, 本次再扣 5 分.
+        response2 = self._partial_refund(self.item_ids[1])
+        self.assert_success(response2)
+
+        self.member.refresh_from_db()
+        self.assertEqual(self.member.points, 0)
+
+        records = PointsRecord.objects.filter(
+            transaction_id=self.tx_id,
+            record_type=PointsRecordType.REFUND_DEDUCT,
+        ).order_by("created_at", "pk")
+
+        self.assertEqual(records.count(), 2)
+
+        records = list(records)
+        self.assertEqual(
+            [record.points_delta for record in records],
+            [-5, -5],
+        )
+        self.assertEqual(
+            [record.points_expected_delta for record in records],
+            [-5, -5],
+        )
+        self.assertEqual(
+            [(record.points_before, record.points_after) for record in records],
+            [(10, 5), (5, 0)],
+        )
+
+        tx = Transaction.objects.get(pk=self.tx_id)
+        self.assertEqual(tx.status, "refunded")

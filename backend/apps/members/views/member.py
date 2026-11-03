@@ -6,7 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 
 from apps.logs.services.logger import log_operation
-from apps.members.models import Member
+from apps.members.models import Member, PointsRecord, PointsRecordType
 from apps.members.serializers.member import (
     MemberAdjustPointsSerializer,
     MemberChangeLevelSerializer,
@@ -262,17 +262,34 @@ class MemberAdjustPointsView(APIView):
         member = _get_member(pk, store_id, for_update=True)
         serializer = MemberAdjustPointsSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+
         points_delta = serializer.validated_data["points"]
         reason = serializer.validated_data["reason"]
+
         points_before = member.points
         new_points = points_before + points_delta
+
         if new_points < 0:
             raise BizException(
                 code=BizCode.PARAM_INVALID,
                 message=f"积分不足, 当前积分 {points_before}, 调整后不能为负",
             )
+
         member.points = new_points
         member.save(update_fields=("points", "updated_at"))
+
+        # 会员积分余额与积分流水必须在同一事务内.
+        PointsRecord.objects.create(
+            member=member,
+            staff=request.user,
+            record_type=PointsRecordType.ADJUST,
+            points_delta=points_delta,
+            points_expected_delta=points_delta,
+            points_before=points_before,
+            points_after=new_points,
+            reason=reason,
+        )
+
         log_operation(
             user=request.user,
             module="member",
@@ -285,4 +302,5 @@ class MemberAdjustPointsView(APIView):
                 "reason": reason,
             },
         )
+
         return success(data=MemberListSerializer(member).data)

@@ -8,9 +8,10 @@
 from decimal import Decimal
 
 from django.db import transaction
+from django.db.models import Sum
 
 from apps.logs.services.logger import log_operation
-from apps.members.models import Member
+from apps.members.models import Member, PointsRecord, PointsRecordType
 from apps.products.models import Product
 from apps.transactions.models import Transaction, TransactionStatus
 from core.codes import BizCode
@@ -36,7 +37,7 @@ def refund_transaction(
            传 None 表示全额退款所有明细.
     """
     with transaction.atomic():
-        # 锁定交易行
+        # 锁定交易行, 保证同一交易的退款串行执行
         tx = (
             Transaction.objects.select_for_update()
             .filter(pk=transaction_id, store_id=store_id)
@@ -110,7 +111,7 @@ def refund_transaction(
             .order_by("pk")
         }
 
-        # 执行退款: 回滚库存, 更新 refunded_quantity, 计算退款金额
+        # 执行退款: 回滚库存, 更新 refunded_quantity, 计算本次退款金额
         refund_amount = Decimal("0.00")
         for item in tx_items:
             if item.pk not in refund_map:
@@ -123,18 +124,82 @@ def refund_transaction(
             item.save(update_fields=("refunded_quantity",))
             refund_amount += item.unit_price * qty
 
-        # 扣回积分 (如果关联会员), 按退款金额占比
+        # 扣回积分 (如果关联会员)
         points_deducted = 0
         if tx.member_id is not None and tx.total_amount > 0:
             member = Member.objects.select_for_update().get(pk=tx.member_id)
-            total_points_earned = int(tx.total_amount * POINTS_PER_YUAN)
-            points_to_deduct = int(
-                refund_amount / tx.total_amount * total_points_earned
-            )
-            points_deducted = min(points_to_deduct, member.points)
-            if points_deducted > 0:
-                member.points -= points_deducted
-                member.save(update_fields=("points", "updated_at"))
+
+            # 查找原交易的消费获得流水.
+            # 新交易通过流水计算累计应扣积分; 历史交易兼容旧算法.
+            earn_record = PointsRecord.objects.filter(
+                earn_transaction=tx,
+                record_type=PointsRecordType.EARN,
+            ).first()
+
+            if earn_record is not None:
+                # 根据所有明细的累计退款数量计算累计退款金额.
+                cumulative_refund_amount = sum(
+                    (item.unit_price * item.refunded_quantity for item in tx_items),
+                    Decimal("0.00"),
+                )
+
+                # 累计应扣积分向下取整.
+                cumulative_points_to_deduct = int(
+                    cumulative_refund_amount
+                    / tx.total_amount
+                    * earn_record.points_delta
+                )
+
+                # 此前退款流水记录的是实际扣回积分, 而不是预期扣回积分.
+                previous_refund_delta = (
+                    PointsRecord.objects.filter(
+                        transaction=tx,
+                        record_type=PointsRecordType.REFUND_DEDUCT,
+                    ).aggregate(total=Sum("points_delta"))["total"]
+                    or 0
+                )
+                previously_deducted = -previous_refund_delta
+
+                # 本次预期扣回 = 累计应扣 - 此前实际扣回.
+                points_to_deduct = max(
+                    0,
+                    cumulative_points_to_deduct - previously_deducted,
+                )
+
+                points_before = member.points
+                points_deducted = min(points_to_deduct, points_before)
+                points_after = points_before - points_deducted
+
+                if points_deducted > 0:
+                    member.points = points_after
+                    member.save(update_fields=("points", "updated_at"))
+
+                # 预期扣回大于实际扣回时也记录流水, 保留积分不足的差额.
+                if points_to_deduct > 0:
+                    PointsRecord.objects.create(
+                        member=member,
+                        staff=staff,
+                        transaction=tx,
+                        record_type=PointsRecordType.REFUND_DEDUCT,
+                        points_delta=-points_deducted,
+                        points_expected_delta=-points_to_deduct,
+                        points_before=points_before,
+                        points_after=points_after,
+                        reason="交易退款扣回积分",
+                    )
+
+            else:
+                # 历史交易没有消费获得流水, 保留旧算法,
+                # 避免将上线前已经扣回的积分重复纳入累计计算.
+                total_points_earned = int(tx.total_amount * POINTS_PER_YUAN)
+                points_to_deduct = int(
+                    refund_amount / tx.total_amount * total_points_earned
+                )
+                points_deducted = min(points_to_deduct, member.points)
+
+                if points_deducted > 0:
+                    member.points -= points_deducted
+                    member.save(update_fields=("points", "updated_at"))
 
         # 更新交易状态
         all_refunded = all(item.refunded_quantity >= item.quantity for item in tx_items)

@@ -10,7 +10,12 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.accounts.models import Permission, Role, User, UserStoreRole
 from apps.logs.models import OperationLog
-from apps.members.models import Member, RechargeRecord
+from apps.members.models import (
+    Member,
+    PointsRecord,
+    PointsRecordType,
+    RechargeRecord,
+)
 from apps.stores.models import Store
 
 
@@ -420,3 +425,55 @@ class MemberAdjustPointsTest(MemberTestBase):
         self.assertEqual(log.detail["points_before"], 100)
         self.assertEqual(log.detail["points_after"], 150)
         self.assertEqual(log.detail["reason"], "活动赠送")
+
+    def test_add_points_record(self):
+        """增加积分时写入正确的积分流水."""
+        self._auth_manager()
+        self._adjust(50, reason="活动赠送")
+
+        record = PointsRecord.objects.get(member=self.member)
+
+        self.assertEqual(record.record_type, PointsRecordType.ADJUST)
+        self.assertEqual(record.points_delta, 50)
+        self.assertEqual(record.points_expected_delta, 50)
+        self.assertEqual(record.points_before, 100)
+        self.assertEqual(record.points_after, 150)
+        self.assertEqual(record.reason, "活动赠送")
+        self.assertEqual(record.staff, self.manager)
+        self.assertIsNone(record.transaction_id)
+        self.assertIsNone(record.earn_transaction_id)
+
+    def test_deduct_points_record(self):
+        """扣减积分时写入负数流水."""
+        self._auth_manager()
+        self._adjust(-30, reason="违规扣分")
+
+        record = PointsRecord.objects.get(member=self.member)
+
+        self.assertEqual(record.record_type, PointsRecordType.ADJUST)
+        self.assertEqual(record.points_delta, -30)
+        self.assertEqual(record.points_expected_delta, -30)
+        self.assertEqual(record.points_before, 100)
+        self.assertEqual(record.points_after, 70)
+        self.assertEqual(record.reason, "违规扣分")
+
+    @patch(
+        "apps.members.views.member.log_operation",
+        side_effect=RuntimeError("日志写入失败"),
+    )
+    def test_adjust_rollback_when_log_fails(self, mock_log):
+        """操作日志失败时, 会员积分和积分流水一起回滚."""
+        self._auth_manager()
+
+        response = self._adjust(50)
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+        mock_log.assert_called_once()
+
+        self.member.refresh_from_db()
+        self.assertEqual(self.member.points, 100)
+
+        self.assertFalse(PointsRecord.objects.filter(member=self.member).exists())

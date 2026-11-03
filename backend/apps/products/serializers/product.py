@@ -74,8 +74,9 @@ class ProductCreateSerializer(serializers.Serializer):
 class ProductUpdateSerializer(serializers.Serializer):
     """编辑商品序列化器.
 
-    名称、条码、售价、库存所有人可改;
+    名称、条码、售价所有人可改;
     成本价只有拥有 product:edit_cost 权限的人能改.
+    库存只能通过专用库存调整接口修改.
     """
 
     name = serializers.CharField(
@@ -94,7 +95,6 @@ class ProductUpdateSerializer(serializers.Serializer):
     cost = serializers.DecimalField(
         max_digits=12, decimal_places=2, min_value=0, required=False, label="成本价"
     )
-    stock = serializers.IntegerField(min_value=0, required=False, label="库存")
 
     def validate_name(self, value):
         """同一门店内商品名称唯一，排除自身."""
@@ -107,7 +107,10 @@ class ProductUpdateSerializer(serializers.Serializer):
         return value
 
     def validate(self, attrs):
-        """成本价修改需要 product:edit_cost 权限."""
+        """校验库存修改和成本价修改权限."""
+        if "stock" in self.initial_data:
+            raise serializers.ValidationError({"stock": ["请通过库存调整接口修改库存"]})
+
         if "cost" in attrs:
             request = self.context.get("request")
             if request and not request.user.is_superuser:
